@@ -1,61 +1,103 @@
-# LibreNMS Foundry FCX Stacked Discovery Project Plan
+# LibreNMS Foundry/Brocade/Ruckus IronWare Stacked Discovery Project Plan
 
 ## Project Overview
 
-This project aims to improve OS discovery and monitoring capabilities for Foundry (Ruckus) FCX switches in LibreNMS, with special focus on stacked switch configurations.
+This project aims to improve OS discovery and monitoring capabilities for IronWare/FastIron-based switches in LibreNMS, with special focus on stacked switch configurations across multiple product families.
 
 ## Background
 
-### About Foundry FCX Switches
-- **Vendor**: Originally Foundry Networks, acquired by Brocade, now part of Ruckus (CommScope)
-- **Product Line**: FastIron FCX series (e.g., FCX648, FCX624)
-- **Key Feature**: Stack technology allowing multiple switches to operate as a single logical unit
+### About IronWare/FastIron Platform
+- **Vendor History**: Foundry Networks → Brocade → Ruckus (CommScope)
+- **Product Lines**: 
+  - **Foundry**: FCX series (legacy, IronWare OS)
+  - **Brocade/Ruckus**: ICX series (current, FastIron OS)
+- **Key Feature**: Virtual chassis stacking allowing multiple switches to operate as a single logical unit
 - **Protocol**: SNMP v2c/v3 for management and monitoring
+- **Enterprise OIDs**: 1991 (Foundry), 1588 (Brocade)
+
+### Supported Switch Families
+
+#### Foundry FCX Series (Legacy)
+- FCX624, FCX648
+- IronWare operating system
+- Original stacking implementation
+- Enterprise OID: 1991
+
+#### Brocade/Ruckus ICX Series (Current)
+- **ICX 6450**: 24/48-port campus access switches
+- **ICX 7150**: Stackable campus switches with PoE
+- **ICX 7250**: Advanced Layer 3 campus switches
+- **ICX 7450**: Campus aggregation switches
+- **ICX 7650**: High-performance data center switches
+- **ICX 7750**: Modular chassis and stackable switches
+- FastIron operating system
+- Enhanced stacking features
+- Enterprise OID: 1588 (also may use 1991 for compatibility)
 
 ### Current Limitations
-- Incomplete or inaccurate OS detection
-- Limited stack member discovery
+- Incomplete or inaccurate OS detection for both FCX and ICX families
+- Limited stack member discovery across platforms
 - Missing stack health monitoring
 - Inadequate handling of stack-specific metrics
 - Poor differentiation between standalone and stacked configurations
+- No differentiation between FCX (Foundry) and ICX (Brocade/Ruckus) platforms
+- Missing support for ICX-specific features and enhancements
 
 ## Project Objectives
 
 ### Primary Goals
-1. **Accurate OS Detection**: Properly identify Foundry FCX switches and their firmware versions
-2. **Stack Discovery**: Detect and enumerate all stack members
-3. **Stack Topology**: Map stack connections and identify master/member roles
-4. **Hardware Inventory**: Collect detailed hardware information for each stack member
-5. **Stack Health Monitoring**: Track stack status, redundancy, and inter-switch links
+1. **Accurate OS Detection**: Properly identify IronWare/FastIron switches (FCX and ICX) and their firmware versions
+2. **Multi-Platform Support**: Handle both Foundry (FCX) and Brocade/Ruckus (ICX) platforms
+3. **Stack Discovery**: Detect and enumerate all stack members across all platforms
+4. **Stack Topology**: Map stack connections and identify master/member roles
+5. **Hardware Inventory**: Collect detailed hardware information for each stack member
+6. **Stack Health Monitoring**: Track stack status, redundancy, and inter-switch links
 
 ### Secondary Goals
-6. Enhanced port monitoring for stack ports
-7. Stack failover event detection
-8. Performance metrics for stacked configurations
-9. Proper handling of stack serial numbers and asset tracking
+7. Enhanced port monitoring for stack ports
+8. Stack failover event detection
+9. Performance metrics for stacked configurations
+10. Proper handling of stack serial numbers and asset tracking
+11. ICX-specific feature detection (e.g., longer stack support, enhanced monitoring)
+12. Backward compatibility with older IronWare versions
 
 ## Technical Approach
 
 ### Phase 1: Research & Analysis
-- [ ] Analyze Foundry FCX MIB files
+- [ ] Analyze MIB files for all platforms:
+  - Foundry FCX MIBs (IronWare)
+  - Brocade ICX MIBs (FastIron)
+  - Ruckus ICX MIBs (latest versions)
 - [ ] Document SNMP OIDs for:
-  - System identification
+  - System identification (both enterprise OIDs)
   - Stack detection
   - Stack member enumeration
   - Hardware details
   - Stack topology
+  - Platform-specific differences
 - [ ] Review existing LibreNMS OS definitions
-- [ ] Test SNMP walks on live FCX switches (standalone and stacked)
+- [ ] Test SNMP walks on live switches:
+  - Foundry FCX (standalone and stacked)
+  - Brocade ICX 6450, 7150, 7250, 7450, 7650, 7750
+  - Various firmware versions
 - [ ] Document current vs. desired behavior
+- [ ] Identify MIB compatibility and differences between platforms
 
 ### Phase 2: OS Discovery Enhancement
-- [ ] Create/update OS definition for Foundry FCX
+- [ ] Create/update OS definitions:
+  - Foundry (FCX series, IronWare)
+  - Brocade ICX series (FastIron)
+  - Ruckus ICX series (FastIron, latest)
 - [ ] Implement OS detection logic using:
-  - sysObjectID
-  - sysDescr patterns
+  - sysObjectID (both 1991 and 1588 enterprise OIDs)
+  - sysDescr patterns (Foundry, FastIron, ICX, FCX)
   - Enterprise OID matching
-- [ ] Add version detection from SNMP data
-- [ ] Create test cases for OS detection
+  - Model number extraction
+- [ ] Add version detection from SNMP data:
+  - IronWare version format
+  - FastIron version format
+- [ ] Platform differentiation (FCX vs ICX)
+- [ ] Create test cases for OS detection across all platforms
 
 ### Phase 3: Stack Discovery Implementation
 - [ ] Implement stack detection logic
@@ -104,36 +146,47 @@ This project aims to improve OS discovery and monitoring capabilities for Foundr
 ├── includes/
 │   └── discovery/
 │       └── os/
-│           └── foundry.inc.php          # OS detection logic
+│           ├── foundry.inc.php          # Foundry FCX OS detection
+│           └── icx.inc.php              # Brocade/Ruckus ICX detection
 ├── includes/
 │   └── definitions/
-│       └── foundry.yaml                 # OS definition file
+│       ├── foundry.yaml                 # Foundry OS definition
+│       └── icx.yaml                     # ICX OS definition
 ├── includes/
 │   └── polling/
-│       └── foundry-stack.inc.php        # Stack polling module
+│       └── ironware-stack.inc.php       # Stack polling for all platforms
 ├── mibs/
 │   ├── foundry/
 │   │   ├── FOUNDRY-SN-ROOT-MIB
 │   │   ├── FOUNDRY-SN-AGENT-MIB
 │   │   ├── FOUNDRY-SN-SWITCH-GROUP-MIB
 │   │   └── FOUNDRY-SN-STACKING-MIB
+│   └── brocade/
+│       ├── BROCADE-REG-MIB
+│       ├── BROCADE-PRODUCTS-MIB
+│       ├── BROCADE-ENTITY-MIB
+│       └── BROCADE-STACKABLE-MIB
 ├── sql-schema/
 │   └── migrations/
-│       └── XXX_add_foundry_stack_tables.sql
+│       └── XXX_add_ironware_stack_tables.sql
 ├── tests/
 │   ├── OSDiscoveryTest.php
 │   └── data/
-│       └── foundry_*.json              # Test SNMP data
+│       ├── foundry_*.json              # Foundry test data
+│       └── icx_*.json                  # ICX test data
 └── docs/
     ├── IMPLEMENTATION.md
-    └── SNMP_REFERENCE.md
+    ├── SNMP_REFERENCE.md
+    └── PLATFORM_DIFFERENCES.md          # Platform-specific notes
 ```
 
 ### Key SNMP OIDs (Preliminary)
 
 #### System Identification
-- **sysObjectID**: `.1.3.6.1.4.1.1991.1.*` (Foundry Enterprise ID: 1991)
-- **sysDescr**: `.1.3.6.1.2.1.1.1.0` (Contains "Foundry" or "FCX")
+- **sysObjectID**: 
+  - `.1.3.6.1.4.1.1991.1.*` (Foundry Enterprise ID: 1991)
+  - `.1.3.6.1.4.1.1588.2.1.*` (Brocade Enterprise ID: 1588)
+- **sysDescr**: `.1.3.6.1.2.1.1.1.0` (Contains "Foundry", "FCX", "FastIron", "ICX", or "Brocade")
 
 #### Stack Information (Foundry Specific)
 - **snStackingConfigUnitTable**: Information about stack units
@@ -150,19 +203,21 @@ This project aims to improve OS discovery and monitoring capabilities for Foundr
 
 ### Database Schema
 
-#### Stack Tables
+#### Stack Tables (Platform-Agnostic)
 ```sql
--- Main stack information table
-foundry_stacks (
+-- Main stack information table (supports FCX and ICX)
+ironware_stacks (
     stack_id INT PRIMARY KEY AUTO_INCREMENT,
     device_id INT FOREIGN KEY,
+    platform VARCHAR(16),            -- 'foundry' or 'icx'
     stack_count INT,
     stack_master_unit INT,
+    stack_topology VARCHAR(16),      -- 'ring', 'chain', 'standalone'
     last_discovered TIMESTAMP
 )
 
 -- Stack member details
-foundry_stack_members (
+ironware_stack_members (
     member_id INT PRIMARY KEY AUTO_INCREMENT,
     stack_id INT FOREIGN KEY,
     unit_id INT,
@@ -171,13 +226,13 @@ foundry_stack_members (
     unit_mac VARCHAR(17),
     unit_priority INT,
     serial_number VARCHAR(64),
-    model VARCHAR(64),
+    model VARCHAR(64),               -- FCX648, ICX7150, etc.
     sw_version VARCHAR(64),
     last_seen TIMESTAMP
 )
 
 -- Stack port status
-foundry_stack_ports (
+ironware_stack_ports (
     port_id INT PRIMARY KEY AUTO_INCREMENT,
     member_id INT FOREIGN KEY,
     port_index INT,
@@ -191,36 +246,46 @@ foundry_stack_ports (
 
 ### Requirements
 - LibreNMS development environment (Docker or local)
-- Access to Foundry FCX switches (physical or virtual)
+- Access to test switches (physical or virtual):
+  - Foundry FCX series
+  - Brocade/Ruckus ICX series (6450, 7150, 7250, 7450, 7650, 7750)
 - SNMP tools (snmpwalk, snmpget, snmpbulkwalk)
 - PHP 8.1+
 - MySQL/MariaDB
-- Foundry MIB files
+- MIB files:
+  - Foundry MIBs (IronWare)
+  - Brocade MIBs (FastIron)
 
 ### Testing Strategy
 1. **Unit Testing**: Mock SNMP responses for various scenarios
 2. **Integration Testing**: Test against actual devices
 3. **Regression Testing**: Ensure existing functionality not broken
-4. **Edge Cases**:
-   - Standalone switch
+4. **Cross-Platform Testing**: Verify all platforms work correctly
+5. **Edge Cases**:
+   - Standalone switch (FCX and ICX)
    - 2-unit stack
-   - Maximum stack size (typically 8-12 units)
-   - Heterogeneous stacks (mixed models)
+   - Maximum stack size (8-12 units)
+   - Heterogeneous stacks (mixed models within same family)
    - Stack with failed members
    - Stack during master failover
+   - Different firmware versions
+   - Mixed IronWare/FastIron versions
 
 ## Success Criteria
 
 1. ✅ FCX switches correctly identified as "foundry" OS
-2. ✅ Firmware version accurately extracted
-3. ✅ Stack configuration detected (vs. standalone)
-4. ✅ All stack members discovered and tracked
-5. ✅ Stack master correctly identified
-6. ✅ Hardware inventory complete for each unit
-7. ✅ Stack topology properly mapped
-8. ✅ Stack health monitoring functional
-9. ✅ Alerts triggered for stack events
-10. ✅ Code accepted into LibreNMS upstream
+2. ✅ ICX switches correctly identified as "icx" OS
+3. ✅ Firmware version accurately extracted (IronWare and FastIron formats)
+4. ✅ Platform correctly detected (Foundry vs Brocade/Ruckus)
+5. ✅ Stack configuration detected (vs. standalone)
+6. ✅ All stack members discovered and tracked across all platforms
+7. ✅ Stack master correctly identified
+8. ✅ Hardware inventory complete for each unit
+9. ✅ Stack topology properly mapped
+10. ✅ Stack health monitoring functional
+11. ✅ Alerts triggered for stack events
+12. ✅ ICX-specific models properly differentiated (6450, 7150, 7250, etc.)
+13. ✅ Code accepted into LibreNMS upstream
 
 ## Timeline & Milestones
 

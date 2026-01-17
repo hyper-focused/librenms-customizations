@@ -1,16 +1,31 @@
-# LibreNMS Foundry FCX Stacked Discovery
+# LibreNMS Foundry/Brocade/Ruckus IronWare Stack Discovery
 
-This project enhances LibreNMS support for Foundry (now Ruckus) FCX switches, with special focus on properly discovering and monitoring stacked switch configurations.
+This project enhances LibreNMS support for Foundry, Brocade, and Ruckus switches running IronWare/FastIron OS, with special focus on properly discovering and monitoring stacked switch configurations.
 
 ## Overview
 
-Foundry FCX switches support stacking technology where multiple physical switches operate as a single logical unit. This project improves LibreNMS's ability to:
+IronWare-based switches (Foundry FCX, Brocade/Ruckus ICX series) support advanced stacking technology where multiple physical switches operate as a single logical unit. This project improves LibreNMS's ability to:
 
-- Accurately detect Foundry FCX switches
+- Accurately detect IronWare-based switches (FCX, ICX series)
 - Discover stack configurations and members
 - Monitor stack health and topology
 - Track hardware inventory per stack member
 - Alert on stack-related events
+
+## Supported Platforms
+
+### Foundry Networks (Legacy)
+- **FCX Series**: FCX624, FCX648 (original Foundry branding)
+
+### Brocade/Ruckus (Current)
+- **ICX 6450 Series**: Campus access switches
+- **ICX 7150 Series**: Stackable campus switches
+- **ICX 7250 Series**: Advanced campus switches
+- **ICX 7450 Series**: Aggregation/core switches
+- **ICX 7650 Series**: High-performance data center switches
+- **ICX 7750 Series**: Modular chassis and stackable switches
+
+All platforms run IronWare (Foundry) or FastIron (Brocade/Ruckus) operating systems and share similar SNMP MIB structures for stack management.
 
 ## Project Status
 
@@ -27,17 +42,20 @@ See [PROJECT_PLAN.md](PROJECT_PLAN.md) for detailed project planning and technic
 
 ## Background
 
-### About Foundry FCX Switches
+### About IronWare-Based Switches
 
 - **Manufacturer**: Originally Foundry Networks → Brocade → Ruckus (CommScope)
-- **Product Line**: FastIron FCX series
-- **Key Feature**: Virtual chassis stacking (up to 8-12 units typically)
-- **Management**: SNMP v2c/v3
-- **Enterprise OID**: 1991
+- **Product Lines**: 
+  - Foundry FCX series (legacy)
+  - Brocade/Ruckus ICX series (current)
+- **Operating Systems**: IronWare (Foundry) / FastIron (Brocade/Ruckus)
+- **Key Feature**: Virtual chassis stacking (up to 12 units)
+- **Management**: SNMP v2c/v3, CLI
+- **Enterprise OID**: 1991 (Foundry), 1588 (Brocade)
 
 ### Why This Project?
 
-Current LibreNMS support for Foundry FCX switches, particularly in stacked configurations, is limited. This leads to:
+Current LibreNMS support for IronWare-based switches, particularly in stacked configurations, is limited. This leads to:
 
 - Incorrect or incomplete device discovery
 - Missing stack member information
@@ -47,11 +65,12 @@ Current LibreNMS support for Foundry FCX switches, particularly in stacked confi
 
 ## Project Goals
 
-1. **Accurate OS Detection**: Properly identify Foundry FCX switches
+1. **Accurate OS Detection**: Properly identify IronWare-based switches (FCX and ICX series)
 2. **Stack Discovery**: Detect and enumerate all stack members
 3. **Hardware Inventory**: Collect detailed information for each unit
 4. **Stack Monitoring**: Track stack health, topology, and events
-5. **Upstream Contribution**: Submit enhancements to LibreNMS project
+5. **Multi-Platform Support**: Handle differences between Foundry, Brocade, and Ruckus variants
+6. **Upstream Contribution**: Submit enhancements to LibreNMS project
 
 ## Repository Structure
 
@@ -104,10 +123,11 @@ This project is developed with the goal of contributing back to the LibreNMS pro
 - [YAML-based OS Definition](https://docs.librenms.org/Developing/os/YAML-OS-Definition/)
 - [Discovery Development](https://docs.librenms.org/Developing/Discovery-Development/)
 
-### Foundry/Ruckus Resources
-- Foundry Networks MIB files
-- FastIron FCX Series documentation
-- Ruckus ICX Switch documentation
+### Foundry/Brocade/Ruckus Resources
+- Foundry Networks MIB files (IronWare)
+- Brocade FastIron MIB files
+- Ruckus ICX Switch documentation and MIBs
+- FastIron configuration and management guides
 
 ## License
 
@@ -122,5 +142,6 @@ For LibreNMS-related questions, please use the official LibreNMS community chann
 ## Acknowledgments
 
 - LibreNMS community and maintainers
-- Foundry Networks / Brocade / Ruckus documentation
-- Community members providing SNMP test data
+- Foundry Networks / Brocade / Ruckus (CommScope) documentation
+- Community members providing SNMP test data from various switch models
+- Network engineers supporting IronWare/FastIron platforms
