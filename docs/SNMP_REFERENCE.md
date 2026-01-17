@@ -76,12 +76,31 @@ Brocade (Enterprise 1588):
                         └─ Product family identifier
 ```
 
-Common sysObjectID values:
-- **FCX624**: `.1.3.6.1.4.1.1991.1.3.51.x`
-- **FCX648**: `.1.3.6.1.4.1.1991.1.3.52.x`
-- **ICX6450-24**: `.1.3.6.1.4.1.1588.2.1.1.1.3.7`
-- **ICX6450-48**: `.1.3.6.1.4.1.1588.2.1.1.1.3.8`
-- **ICX7150-24**: `.1.3.6.1.4.1.1588.2.1.1.1.3.30`
+## ACTUAL sysObjectID Values (From Real Devices)
+
+**IMPORTANT**: Real device testing shows these switches use Foundry OID (1991) on firmware 08.0.30u:
+
+Confirmed values:
+- **FCX648**: `.1.3.6.1.4.1.1991.1.3.48.2.1` ✅ VERIFIED
+- **ICX6450-48**: `.1.3.6.1.4.1.1991.1.3.48.5.1` ✅ VERIFIED
+
+**OID Pattern**: `.1.3.6.1.4.1.1991.1.3.48.X.Y`
+- X = Series identifier (2=FCX648, 5=ICX6450-48)
+- Y = Variant (typically 1)
+
+Hypothesized values (to be confirmed):
+- **FCX624**: `.1.3.6.1.4.1.1991.1.3.48.1.x` (likely)
+- **ICX6430**: `.1.3.6.1.4.1.1991.1.3.48.3.x` (likely)
+- **ICX6610**: `.1.3.6.1.4.1.1991.1.3.48.4.x` (likely)
+- **ICX6650**: `.1.3.6.1.4.1.1991.1.3.48.6.x` (likely)
+
+**Note**: Newer firmware versions (FastIron 09.x) may use Brocade enterprise OID (1588).
+Detection logic should check BOTH enterprise OIDs (1991 and 1588).
+
+### Theoretical OIDs for ICX 7xxx Series
+
+These are from documentation and may differ in practice:
+- **ICX7150-24**: `.1.3.6.1.4.1.1588.2.1.1.1.3.30` (if using Brocade OID)
 - **ICX7150-48**: `.1.3.6.1.4.1.1588.2.1.1.1.3.31`
 - **ICX7250-24**: `.1.3.6.1.4.1.1588.2.1.1.1.3.32`
 - **ICX7250-48**: `.1.3.6.1.4.1.1588.2.1.1.1.3.33`
@@ -90,6 +109,8 @@ Common sysObjectID values:
 - **ICX7650**: `.1.3.6.1.4.1.1588.2.1.1.1.3.45`
 - **ICX7750-26Q**: `.1.3.6.1.4.1.1588.2.1.1.1.3.40`
 - **ICX7750-48F**: `.1.3.6.1.4.1.1588.2.1.1.1.3.41`
+
+**Action**: Need SNMP walks from ICX 7xxx series to confirm actual OIDs
 
 ## Agent MIB OIDs (Common to Both Platforms)
 

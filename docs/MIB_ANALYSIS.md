@@ -60,22 +60,35 @@ icx6450    OBJECT IDENTIFIER ::= { registration Z }
 ```
 
 ### 2. sysObjectID Values
-```
--- Each model should have a unique sysObjectID
--- Format for Foundry: .1.3.6.1.4.1.1991.1.3.X.Y
--- Format for Brocade: .1.3.6.1.4.1.1588.2.1.1.1.3.X
 
--- We need the exact OID for each model:
-FCX624:    .1.3.6.1.4.1.1991.1.3.51.?
-FCX648:    .1.3.6.1.4.1.1991.1.3.52.?
-ICX6400:   .1.3.6.1.4.1.1588.2.1.1.1.3.?
-ICX6450:   .1.3.6.1.4.1.1588.2.1.1.1.3.?
-ICX6610:   .1.3.6.1.4.1.1588.2.1.1.1.3.?
-ICX6650:   .1.3.6.1.4.1.1588.2.1.1.1.3.?
-ICX7250:   .1.3.6.1.4.1.1588.2.1.1.1.3.?
-ICX7450:   .1.3.6.1.4.1.1588.2.1.1.1.3.?
-ICX7750:   .1.3.6.1.4.1.1588.2.1.1.1.3.?
+**ACTUAL VALUES FROM REAL DEVICES** (Firmware 08.0.30u):
 ```
+FCX648:     .1.3.6.1.4.1.1991.1.3.48.2.1  ✅ VERIFIED
+ICX6450-48: .1.3.6.1.4.1.1991.1.3.48.5.1  ✅ VERIFIED
+```
+
+**PATTERN DISCOVERED**: `.1.3.6.1.4.1.1991.1.3.48.X.Y`
+- Both FCX and ICX6450 use Foundry OID (1991)
+- Family identifier: 48
+- Series: 2 (FCX648), 5 (ICX6450-48)
+- Variant: 1
+
+**TO BE VERIFIED**:
+```
+FCX624:    .1.3.6.1.4.1.1991.1.3.48.1.? (hypothesized)
+ICX6430:   .1.3.6.1.4.1.1991.1.3.48.3.? (hypothesized)
+ICX6610:   .1.3.6.1.4.1.1991.1.3.48.4.? (hypothesized)
+ICX6650:   .1.3.6.1.4.1.1991.1.3.48.6.? (hypothesized)
+ICX7150:   .1.3.6.1.4.1.1588.2.1.1.1.3.? (may use Brocade OID)
+ICX7250:   .1.3.6.1.4.1.1588.2.1.1.1.3.? (may use Brocade OID)
+ICX7450:   .1.3.6.1.4.1.1588.2.1.1.1.3.? (may use Brocade OID)
+ICX7750:   .1.3.6.1.4.1.1588.2.1.1.1.3.? (may use Brocade OID)
+```
+
+**IMPORTANT FINDING**: 
+- Firmware 08.0.30u uses Foundry OID (1991) for BOTH FCX and ICX
+- Newer firmware may use Brocade OID (1588)
+- Detection must check BOTH enterprise OIDs
 
 ### 3. Stack-Related OIDs
 ```
