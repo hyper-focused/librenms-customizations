@@ -1,0 +1,343 @@
+# Patch 2: IronWare Stack Topology Discovery
+
+This patch adds enhanced stack topology discovery and per-unit inventory tracking for IronWare switches.
+
+## File 1: database/migrations/YYYY_MM_DD_HHMMSS_add_ironware_stack_tables.php
+
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('ironware_stack_topology', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedInteger('device_id')->unique();
+            $table->enum('topology', ['ring', 'chain', 'standalone', 'unknown'])->default('unknown');
+            $table->tinyInteger('unit_count')->unsigned()->default(0);
+            $table->tinyInteger('master_unit')->unsigned()->nullable();
+            $table->string('stack_mac', 17)->nullable();
+            $table->timestamps();
+            
+            $table->foreign('device_id')
+                  ->references('device_id')
+                  ->on('devices')
+                  ->onDelete('cascade');
+            
+            $table->index('device_id');
+        });
+        
+        Schema::create('ironware_stack_members', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedInteger('device_id');
+            $table->tinyInteger('unit_id')->unsigned();
+            $table->enum('role', ['master', 'member', 'standalone', 'unknown'])->default('unknown');
+            $table->enum('state', ['active', 'remote', 'reserved', 'empty', 'unknown'])->default('unknown');
+            $table->string('serial_number', 64)->nullable();
+            $table->string('model', 64)->nullable();
+            $table->string('version', 64)->nullable();
+            $table->string('mac_address', 17)->nullable();
+            $table->tinyInteger('priority')->unsigned()->default(0);
+            $table->timestamps();
+            
+            $table->foreign('device_id')
+                  ->references('device_id')
+                  ->on('devices')
+                  ->onDelete('cascade');
+            
+            $table->unique(['device_id', 'unit_id']);
+            $table->index('device_id');
+            $table->index('role');
+        });
+    }
+    
+    public function down(): void
+    {
+        Schema::dropIfExists('ironware_stack_members');
+        Schema::dropIfExists('ironware_stack_topology');
+    }
+};
+```
+
+## File 2: app/Models/IronwareStackTopology.php
+
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class IronwareStackTopology extends Model
+{
+    protected $table = 'ironware_stack_topology';
+    
+    protected $fillable = [
+        'device_id',
+        'topology',
+        'unit_count',
+        'master_unit',
+        'stack_mac',
+    ];
+    
+    protected $casts = [
+        'device_id' => 'integer',
+        'unit_count' => 'integer',
+        'master_unit' => 'integer',
+    ];
+    
+    public function device(): BelongsTo
+    {
+        return $this->belongsTo(Device::class, 'device_id', 'device_id');
+    }
+    
+    public function members(): HasMany
+    {
+        return $this->hasMany(IronwareStackMember::class, 'device_id', 'device_id');
+    }
+    
+    public function isStacked(): bool
+    {
+        return $this->unit_count > 1;
+    }
+    
+    public function isRing(): bool
+    {
+        return $this->topology === 'ring';
+    }
+}
+```
+
+## File 3: app/Models/IronwareStackMember.php
+
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class IronwareStackMember extends Model
+{
+    protected $table = 'ironware_stack_members';
+    
+    protected $fillable = [
+        'device_id',
+        'unit_id',
+        'role',
+        'state',
+        'serial_number',
+        'model',
+        'version',
+        'mac_address',
+        'priority',
+    ];
+    
+    protected $casts = [
+        'device_id' => 'integer',
+        'unit_id' => 'integer',
+        'priority' => 'integer',
+    ];
+    
+    public function device(): BelongsTo
+    {
+        return $this->belongsTo(Device::class, 'device_id', 'device_id');
+    }
+    
+    public function topology(): BelongsTo
+    {
+        return $this->belongsTo(IronwareStackTopology::class, 'device_id', 'device_id');
+    }
+    
+    public function isMaster(): bool
+    {
+        return $this->role === 'master';
+    }
+    
+    public function isActive(): bool
+    {
+        return $this->state === 'active';
+    }
+}
+```
+
+## File 4: LibreNMS/OS/Ironware.php (ENHANCEMENT)
+
+```php
+<?php
+
+namespace LibreNMS\OS;
+
+use App\Models\Device;
+use App\Models\IronwareStackTopology;
+use App\Models\IronwareStackMember;
+use LibreNMS\OS\Shared\Foundry;
+
+class Ironware extends Foundry
+{
+    public function discoverOS(Device $device): void
+    {
+        parent::discoverOS($device);
+        $this->rewriteHardware();
+        $this->discoverStackTopology(); // NEW
+    }
+    
+    /**
+     * Discover and map stack topology for IronWare switches (FCX/ICX)
+     * 
+     * Detects stack configuration, enumerates members, and tracks
+     * per-unit hardware inventory for visual topology mapping.
+     * 
+     * @return void
+     */
+    private function discoverStackTopology(): void
+    {
+        $device = $this->getDevice();
+        
+        // Check if stacking is enabled
+        $stackState = \SnmpQuery::get('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalConfigState.0')->value();
+        
+        if ($stackState != 1) {
+            // Stacking not enabled, clean up any old data
+            IronwareStackTopology::where('device_id', $device->device_id)->delete();
+            return;
+        }
+        
+        // Get stack topology (1=ring, 2=chain, 3=standalone)
+        $topologyValue = \SnmpQuery::get('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalTopology.0')->value();
+        $stackMac = \SnmpQuery::get('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalMacAddress.0')->value();
+        
+        // Get stack members
+        $members = \SnmpQuery::walk('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingOperUnitTable')->table();
+        
+        if (empty($members)) {
+            return;
+        }
+        
+        // Get serial numbers per unit
+        $serials = \SnmpQuery::walk('FOUNDRY-SN-AGENT-MIB::snChasUnitSerNum')->table();
+        $descriptions = \SnmpQuery::walk('FOUNDRY-SN-AGENT-MIB::snChasUnitDescription')->table();
+        
+        // Map topology value
+        $topology = match($topologyValue) {
+            1 => 'ring',
+            2 => 'chain',
+            3 => 'standalone',
+            default => 'unknown',
+        };
+        
+        // Find master unit
+        $masterUnit = null;
+        foreach ($members as $unitId => $member) {
+            if (($member['snStackingOperUnitRole'] ?? 0) == 3) {
+                $masterUnit = $unitId;
+                break;
+            }
+        }
+        
+        // Update or create topology record
+        IronwareStackTopology::updateOrCreate(
+            ['device_id' => $device->device_id],
+            [
+                'topology' => $topology,
+                'unit_count' => count($members),
+                'master_unit' => $masterUnit,
+                'stack_mac' => $stackMac,
+            ]
+        );
+        
+        // Process each stack member
+        $currentMemberIds = [];
+        foreach ($members as $unitId => $member) {
+            $memberData = [
+                'role' => $this->mapStackRole($member['snStackingOperUnitRole'] ?? 0),
+                'state' => $this->mapStackState($member['snStackingOperUnitState'] ?? 0),
+                'mac_address' => $member['snStackingOperUnitMac'] ?? null,
+                'priority' => $member['snStackingOperUnitPriority'] ?? 0,
+                'version' => $member['snStackingOperUnitImgVer'] ?? null,
+                'serial_number' => $serials[$unitId] ?? null,
+                'model' => $descriptions[$unitId] ?? null,
+            ];
+            
+            $stackMember = IronwareStackMember::updateOrCreate(
+                [
+                    'device_id' => $device->device_id,
+                    'unit_id' => $unitId,
+                ],
+                $memberData
+            );
+            
+            $currentMemberIds[] = $stackMember->id;
+        }
+        
+        // Remove members that no longer exist (stack reduced)
+        IronwareStackMember::where('device_id', $device->device_id)
+            ->whereNotIn('id', $currentMemberIds)
+            ->delete();
+    }
+    
+    /**
+     * Map stack role value to string
+     */
+    private function mapStackRole(int $value): string
+    {
+        return match($value) {
+            1 => 'standalone',
+            2 => 'member',
+            3 => 'master',
+            default => 'unknown',
+        };
+    }
+    
+    /**
+     * Map stack state value to string
+     */
+    private function mapStackState(int $value): string
+    {
+        return match($value) {
+            1 => 'active',
+            2 => 'remote',
+            3 => 'reserved',
+            4 => 'empty',
+            default => 'unknown',
+        };
+    }
+    
+    // Keep existing rewriteHardware() method unchanged
+    private function rewriteHardware()
+    {
+        // ... existing 650+ hardware mappings ...
+    }
+}
+```
+
+## Testing:
+```bash
+# Run tests with new variants
+lnms dev:check unit -o ironware --variant fcx648
+lnms dev:check unit -o ironware --variant icx6450
+
+# Full test suite
+lnms dev:check unit --db --snmpsim -o ironware
+```
+
+## Benefits:
+- Visual stack topology mapping
+- Per-unit hardware inventory
+- Master/member role tracking
+- Stack health monitoring
+- Better asset management
+
+## Risk: 🟡 Medium
+- New database tables
+- New functionality
+- Requires migration
+- Extensive testing needed

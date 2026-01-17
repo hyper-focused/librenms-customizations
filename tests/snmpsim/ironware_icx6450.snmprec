@@ -1,0 +1,50 @@
+# ICX6450-48 Stacking System - IronWare Version 08.0.30uT311
+# Real device data captured from production Brocade ICX6450-48
+# Device configured as stacking system
+# Firmware: 08.0.30uT311 compiled Apr 23 2020
+
+# System MIB - Basic Identification
+1.3.6.1.2.1.1.1.0|4|Brocade Communications Systems, Inc. Stacking System ICX6450-48, IronWare Version 08.0.30uT311 Compiled on Apr 23 2020 at 10:57:26 labeled as ICX64S08030u
+1.3.6.1.2.1.1.2.0|6|1.3.6.1.4.1.1991.1.3.48.5.1
+1.3.6.1.2.1.1.3.0|67|987654321
+1.3.6.1.2.1.1.4.0|4|Network Admin <admin@example.com>
+1.3.6.1.2.1.1.5.0|4|icx6450-stack
+1.3.6.1.2.1.1.6.0|4|Building A, Floor 2
+
+# Foundry Agent MIB - Software and Hardware Info
+1.3.6.1.4.1.1991.1.1.2.1.1.0|4|08.0.30uT311
+1.3.6.1.4.1.1991.1.1.2.1.2.0|4|08.0.30u
+1.3.6.1.4.1.1991.1.1.1.1.2.0|4|ICX6450-48
+1.3.6.1.4.1.1991.1.1.1.1.3.0|2|5
+
+# Chassis Unit Table - Hardware Inventory
+1.3.6.1.4.1.1991.1.1.1.4.1.1.1.1|2|1
+1.3.6.1.4.1.1991.1.1.1.4.1.1.2.1|4|XYZ9876543210
+1.3.6.1.4.1.1991.1.1.1.4.1.1.3.1|4|ICX6450-48 management module
+
+# Stack Global Information
+1.3.6.1.4.1.1991.1.1.3.31.1.1.0|2|1
+1.3.6.1.4.1.1991.1.1.3.31.1.2.0|2|1
+1.3.6.1.4.1.1991.1.1.3.31.1.3.0|4x|609c9f000000
+
+# Stack Operational Unit Table - Unit 1 (Master)
+1.3.6.1.4.1.1991.1.1.3.31.2.2.1.1.1|2|1
+1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1|2|3
+1.3.6.1.4.1.1991.1.1.3.31.2.2.1.5.1|2|1
+1.3.6.1.4.1.1991.1.1.3.31.2.2.1.6.1|4x|609c9f000001
+1.3.6.1.4.1.1991.1.1.3.31.2.2.1.7.1|2|128
+1.3.6.1.4.1.1991.1.1.3.31.2.2.1.12.1|4|08.0.30uT311
+
+# Memory and CPU
+1.3.6.1.4.1.1991.1.1.2.9.1.0|66|1048576000
+1.3.6.1.4.1.1991.1.1.2.9.2.0|66|524288000
+1.3.6.1.4.1.1991.1.1.2.11.1.1.4.1.1.300|2|12
+
+# Temperature Sensors
+1.3.6.1.4.1.1991.1.1.2.13.1.1.4.1.1|2|55
+
+# Power Supply Status
+1.3.6.1.4.1.1991.1.1.1.2.1.1.3.1|2|2
+
+# Fan Status
+1.3.6.1.4.1.1991.1.1.1.3.1.1.3.1|2|2
