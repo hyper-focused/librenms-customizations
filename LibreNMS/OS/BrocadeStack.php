@@ -30,6 +30,7 @@ namespace LibreNMS\OS;
 use App\Models\Device;
 use App\Models\IronwareStackTopology;
 use App\Models\IronwareStackMember;
+use LibreNMS\Component;
 use LibreNMS\OS\Shared\Foundry;
 
 class BrocadeStack extends Foundry
@@ -135,6 +136,72 @@ class BrocadeStack extends Foundry
             IronwareStackMember::where('device_id', $device->device_id)
                 ->whereNotIn('id', $currentMemberIds)
                 ->delete();
+        }
+
+        // Store stack data in Component system for device overview display
+        $this->updateStackComponent($device, $topology, $masterUnit, $members, count($members));
+    }
+
+    /**
+     * Update stack component for device overview display
+     * Uses LibreNMS Component system (standard approach)
+     *
+     * @param Device $device
+     * @param string $topology
+     * @param int|null $masterUnit
+     * @param array $members
+     * @param int $unitCount
+     * @return void
+     */
+    private function updateStackComponent(Device $device, string $topology, ?int $masterUnit, array $members, int $unitCount): void
+    {
+        $component = new Component();
+
+        // Get existing stack component or create new
+        $components = $component->getComponents($device->device_id, ['type' => 'stack']);
+        
+        $componentArray = [];
+        if (!empty($components)) {
+            $componentArray = $components;
+            $stackId = array_key_first($componentArray[$device->device_id] ?? []);
+        }
+
+        // Build component data
+        $componentData = [
+            'type' => 'stack',
+            'label' => 'Stack Topology',
+            'status' => ($topology === 'ring' || $topology === 'chain') ? 1 : 0,
+            'disabled' => 0,
+            'ignore' => 0,
+        ];
+
+        // Build component preferences (detailed stack info)
+        $prefs = [
+            'topology' => $topology,
+            'unit_count' => $unitCount,
+            'master_unit' => $masterUnit,
+            'members' => [],
+        ];
+
+        // Add member details
+        foreach ($members as $unitId => $member) {
+            $prefs['members'][$unitId] = [
+                'unit_id' => $unitId,
+                'role' => $this->mapStackRole($member['snStackingOperUnitRole'] ?? 0),
+                'state' => $this->mapStackState($member['snStackingOperUnitState'] ?? 0),
+                'priority' => $member['snStackingOperUnitPriority'] ?? 0,
+                'mac' => $member['snStackingOperUnitMac'] ?? null,
+                'version' => $member['snStackingOperUnitImgVer'] ?? null,
+            ];
+        }
+
+        if (isset($stackId)) {
+            // Update existing component
+            $component->setComponentPrefs($stackId, $prefs);
+        } else {
+            // Create new component
+            $stackId = $component->createComponent($device->device_id, 'stack');
+            $component->setComponentPrefs($stackId, $prefs);
         }
     }
 
