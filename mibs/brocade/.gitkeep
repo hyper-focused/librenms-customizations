@@ -1,0 +1,13 @@
+# Brocade/Ruckus ICX MIB Files
+
+Place ICX series MIB files here:
+- ICX64R08030u.mib (ICX6400 series)
+- ICX64S08030u.mib
+- ICXR08030u.mib (ICX6650 series)
+- ICXS08030u.mib
+- SPR08030u.mib (ICX7250 series)
+- SPS08030u.mib
+- SWR08030u.mib (ICX7750 series)
+- SWS08030u.mib
+
+These MIBs should be obtained from Ruckus support portal or extracted from switch firmware.
