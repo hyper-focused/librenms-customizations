@@ -1,0 +1,38 @@
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS files
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.log
+
+# Dependencies
+vendor/
+node_modules/
+
+# Test output
+coverage/
+.phpunit.result.cache
+
+# Environment files
+.env
+.env.local
+
+# Build artifacts
+build/
+dist/
+
+# SNMP captures (may contain sensitive data)
+*.snmpwalk
+captures/
+
+# Database
+*.sql.backup
