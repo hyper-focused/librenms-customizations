@@ -1,0 +1,240 @@
+os: foundry-fcx
+text: 'Foundry FCX'
+type: network
+icon: foundry
+group: Foundry
+mib_dir: foundry
+discovery:
+  - sysObjectID:
+      - .1.3.6.1.4.1.1991.1.3.48.1  # FCX624 (hypothesized)
+      - .1.3.6.1.4.1.1991.1.3.48.2  # FCX648 (verified from real device)
+  - sysDescr_regex:
+      - '/Foundry Networks, Inc.*FCX/'
+      - '/Brocade Communications Systems, Inc.*FCX/'
+      - '/Ruckus.*FCX/'
+      - '/Stacking System FCX/'
+
+discovery_modules:
+  os: true
+  ports: true
+  ports-stack: true
+  entity-physical: true
+  entity-state: true
+  processors: true
+  memory: true
+  storage: true
+  hr-mib: true
+  ucd-mib: false
+  ipmi: false
+  sensors: true
+  status: true
+  stp: true
+  cisco-vrf-lite: false
+  vrf: false
+  bgp-peers: false
+  junose-atm-vp: false
+  oam: true
+  xdsl: false
+  adsl: false
+  vdsl: false
+  lldp: true
+  arp-table: true
+  arp-table-interface: true
+  discovery-protocols: true
+  fdb-table: true
+  vlans: true
+  cisco-mac-accounting: false
+  cisco-otv: false
+  cisco-pw: false
+  cisco-vrf: false
+  cisco-cef: false
+  cisco-sla: false
+  cisco-cbqos: false
+  cisco-otv: false
+  ipv4-addresses: true
+  ipv6-addresses: true
+  route: true
+  packages: false
+  mef: false
+  cisco-mediatrace: false
+  cisco-flexlinks: false
+  cisco-loadbalancer: false
+  cisco-ace-serverfarms: false
+  cisco-ace-loadbalancer: false
+  cisco-csr: false
+  fdb-table-vlan: true
+  netscaler-vsvr: false
+  aruba-controller: false
+  cisco-voice: false
+  cisco-c6500: false
+  cisco-asa-firewall: false
+  cisco-pix-firewall: false
+  cisco-iosxcb: false
+  cisco-wap: false
+  cisco-privacy: false
+  cisco-c9800: false
+  paloalto: false
+  fortigate: false
+  sonicwall: false
+  vyos: false
+  cisco-acl: false
+  cisco-cbqos: false
+  cisco-cef: false
+  cisco-mac-accounting: false
+  cisco-mediatrace: false
+  cisco-mls: false
+  cisco-otv: false
+  cisco-pw: false
+  cisco-sla: false
+  cisco-vrf: false
+  cisco-wap: false
+  junose-atm-vp: false
+  oam: true
+  xdsl: false
+  adsl: false
+  vdsl: false
+
+poller_modules:
+  os: true
+  ports: true
+  entity-physical: true
+  entity-state: true
+  processors: true
+  memory: true
+  storage: true
+  hr-mib: true
+  ucd-mib: false
+  ipmi: false
+  sensors: true
+  status: true
+  stp: true
+  cisco-vrf-lite: false
+  vrf: false
+  bgp-peers: false
+  junose-atm-vp: false
+  oam: true
+  xdsl: false
+  adsl: false
+  vdsl: false
+  lldp: true
+  arp-table: true
+  arp-table-interface: true
+  discovery-protocols: true
+  fdb-table: true
+  vlans: true
+  cisco-mac-accounting: false
+  cisco-otv: false
+  cisco-pw: false
+  cisco-vrf: false
+  cisco-cef: false
+  cisco-sla: false
+  cisco-cbqos: false
+  cisco-otv: false
+  ipv4-addresses: true
+  ipv6-addresses: true
+  route: true
+  packages: false
+  mef: false
+  cisco-mediatrace: false
+  cisco-flexlinks: false
+  cisco-loadbalancer: false
+  cisco-ace-serverfarms: false
+  cisco-ace-loadbalancer: false
+  cisco-csr: false
+  fdb-table-vlan: true
+  netscaler-vsvr: false
+  aruba-controller: false
+  cisco-voice: false
+  cisco-c6500: false
+  cisco-asa-firewall: false
+  cisco-pix-firewall: false
+  cisco-iosxcb: false
+  cisco-wap: false
+  cisco-privacy: false
+  cisco-c9800: false
+  paloalto: false
+  fortigate: false
+  sonicwall: false
+  vyos: false
+  cisco-acl: false
+  cisco-cbqos: false
+  cisco-cef: false
+  cisco-mac-accounting: false
+  cisco-mediatrace: false
+  cisco-mls: false
+  cisco-otv: false
+  cisco-pw: false
+  cisco-sla: false
+  cisco-vrf: false
+  cisco-wap: false
+  junose-atm-vp: false
+  oam: true
+  xdsl: false
+  adsl: false
+  vdsl: false
+
+register_mibs:
+  - FOUNDRY-SN-ROOT
+  - FOUNDRY-SN-SWITCH-GROUP-MIB
+  - FOUNDRY-SN-STACKING-MIB
+  - FOUNDRY-SN-AGENT-MIB
+
+mibs:
+  - FOUNDRY-SN-ROOT
+  - FOUNDRY-SN-SWITCH-GROUP-MIB
+  - FOUNDRY-SN-STACKING-MIB
+  - FOUNDRY-SN-AGENT-MIB
+  - RFC1213-MIB
+  - SNMPv2-MIB
+  - IF-MIB
+  - ENTITY-MIB
+  - LLDP-MIB
+
+bad_if:
+  - '^\d+\.\d+$'  # Match decimal interface names like 1.1, 2.1 etc.
+  - '^mgmt\d+$'   # Management interfaces
+  - '^loopback\d+$'  # Loopback interfaces
+
+bad_if_regexp: []
+
+good_if:
+  - 'port\d+'
+  - 'ethernet\d+/\d+'
+  - 'gigabitethernet\d+/\d+'
+  - 'tengigabitethernet\d+/\d+'
+  - 'fortygigabitethernet\d+/\d+'
+
+ifname: true
+ifalias: true
+ifdescr: true
+
+sensors:
+  temperature:
+    data:
+      -
+        oid: snChasFanTable
+        value: snChasFanOperStatus
+        num_oid: '.1.3.6.1.4.1.1991.1.3.49.2.1.2.1.{{ $index }}'
+        descr: 'Fan {{ $snChasFanDescription }}'
+        index: 'snChasFanIndex.{{ $index }}'
+        state_name: snChasFanOperStatus
+        states:
+          - { value: 1, generic: 0, graph: 0, descr: 'operational' }
+          - { value: 2, generic: 2, graph: 0, descr: 'failed' }
+          - { value: 3, generic: 3, graph: 0, descr: 'unknown' }
+
+  power:
+    data:
+      -
+        oid: snChasPwrSupplyTable
+        value: snChasPwrSupplyOperStatus
+        num_oid: '.1.3.6.1.4.1.1991.1.3.49.2.1.3.1.{{ $index }}'
+        descr: 'Power Supply {{ $snChasPwrSupplyDescription }}'
+        index: 'snChasPwrSupplyIndex.{{ $index }}'
+        state_name: snChasPwrSupplyOperStatus
+        states:
+          - { value: 1, generic: 0, graph: 0, descr: 'operational' }
+          - { value: 2, generic: 2, graph: 0, descr: 'failed' }
+          - { value: 3, generic: 3, graph: 0, descr: 'unknown' }
+
+stackable: true

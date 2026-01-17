@@ -1,0 +1,9 @@
+# Foundry MIB Files
+
+Place Foundry FCX and FSX MIB files here:
+- FCXR08030u.mib
+- FCXS08030u.mib
+- SXLR08030u.mib
+- SXLS08030u.mib
+
+These MIBs should be obtained from Foundry/Brocade/Ruckus support or extracted from switch firmware.
