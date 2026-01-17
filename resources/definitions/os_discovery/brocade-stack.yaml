@@ -1,0 +1,283 @@
+# Brocade Stack OS Discovery
+# Unified discovery for all Brocade stacked switches (FCX/ICX)
+# Includes monitoring for memory, CPU, sensors, PoE, and stack-specific features
+
+mib: FOUNDRY-SN-AGENT-MIB:FOUNDRY-SN-SWITCH-GROUP-MIB:FOUNDRY-SN-STACKING-MIB
+modules:
+    mempools:
+        additional_oids:
+            oids:
+                - FOUNDRY-SN-AGENT-MIB::snAgentBrdMainBrdDescription
+        data:
+            -
+                total: FOUNDRY-SN-AGENT-MIB::snAgSystemDRAMTotal
+                free: FOUNDRY-SN-AGENT-MIB::snAgSystemDRAMFree
+                descr: 'System Memory'
+                type: brocade-system
+            -
+                total: FOUNDRY-SN-AGENT-MIB::snAgentBrdMemoryTotal
+                percent_used: FOUNDRY-SN-AGENT-MIB::snAgentBrdMemoryUtil100thPercent
+                type: brocade-dyn
+                descr: '{{ FOUNDRY-SN-AGENT-MIB::snAgentBrdMainBrdDescription }}'
+    
+    os:
+        hardware_mib: FOUNDRY-SN-ROOT-MIB
+        # Extract version from sysDescr
+        # Matches: "IronWare Version 08.0.30uT7f1" or "FastIron Version 08.0.95"
+        sysDescr_regex: '/(?:IronWare|FastIron) Version (?<version>[\d.]+[a-zA-Z0-9]*)/i'
+        # Extract hardware from sysDescr
+        # Matches: "FCX648" or "ICX6450-48" or "ICX7150-48P"
+        hardware: 
+            - FOUNDRY-SN-AGENT-MIB::snChasUnitDescription.1
+        hardware_regex: '/(?:FCX|ICX)\d+[A-Z0-9-]*/i'
+        serial: FOUNDRY-SN-AGENT-MIB::snChasSerNum.0
+        version: FOUNDRY-SN-AGENT-MIB::snAgImgVer.0
+    
+    sensors:
+        additional_oids:
+            data:
+                -
+                    oid:
+                        - ifDescr
+                        - snAgentTemp2SensorDescr
+        
+        # Optical transceiver monitoring
+        dbm:
+            data:
+                -
+                    oid: snIfOpticalMonitoringInfoTable
+                    value: snIfOpticalMonitoringRxPower
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.3.3.6.1.3.{{ $index }}'
+                    descr: '{{ $ifDescr }} Rx Power'
+                    index: 'snIfOpticalMonitoringRxPower.{{ $index }}'
+                -
+                    oid: snIfOpticalMonitoringInfoTable
+                    value: snIfOpticalMonitoringTxPower
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.3.3.6.1.2.{{ $index }}'
+                    descr: '{{ $ifDescr }} Tx Power'
+                    index: 'snIfOpticalMonitoringTxPower.{{ $index }}'
+        
+        # Current monitoring
+        current:
+            options:
+                divisor: 1000
+            data:
+                -
+                    oid: snIfOpticalMonitoringInfoTable
+                    value: snIfOpticalMonitoringTxBiasCurrent
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.3.3.6.1.4.{{ $index }}'
+                    descr: '{{ $ifDescr }} Tx Bias Current'
+                    index: 'snIfOpticalMonitoringTxBiasCurrent.{{ $index }}'
+        
+        # PoE monitoring
+        count:
+            data:
+                -
+                    oid: FOUNDRY-POE-MIB::snAgentPoeGblPowerAllocationsRequestsHonored
+                    value: FOUNDRY-POE-MIB::snAgentPoeGblPowerAllocationsRequestsHonored
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.2.14.1.3.{{ $index }}'
+                    index: 'snAgentPoeGblPowerAllocationsRequestsHonored.{{ $index }}'
+                    descr: 'PoE Allocations Honored'
+                -
+                    oid: FOUNDRY-POE-MIB::snAgentPoeUnitTable
+                    value: FOUNDRY-POE-MIB::snAgentPoeUnitPowerAllocationsRequestsHonored
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.4.{{ $index }}'
+                    index: 'snAgentPoeUnitPowerAllocationsRequestsHonored.{{ $index }}'
+                    group: 'Unit PoE'
+                    descr: 'Unit {{ $index }} PoE Allocations'
+        
+        # Power monitoring
+        power:
+            data:
+                -
+                    oid: FOUNDRY-POE-MIB::snAgentPoeGblPowerCapacityTotal
+                    value: FOUNDRY-POE-MIB::snAgentPoeGblPowerCapacityTotal
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.2.14.1.1.{{ $index }}'
+                    index: 'snAgentPoeGblPowerCapacityTotal.{{ $index }}'
+                    group: 'Device PoE'
+                    divisor: 1000
+                    descr: 'Total PoE Capacity'
+                -
+                    oid: FOUNDRY-POE-MIB::snAgentPoeGblPowerCapacityFree
+                    value: FOUNDRY-POE-MIB::snAgentPoeGblPowerCapacityFree
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.2.14.1.2.{{ $index }}'
+                    index: 'snAgentPoeGblPowerCapacityFree.{{ $index }}'
+                    group: 'Device PoE'
+                    divisor: 1000
+                    descr: 'Free PoE Capacity'
+                -
+                    oid: FOUNDRY-POE-MIB::snAgentPoePortTable
+                    value: FOUNDRY-POE-MIB::snAgentPoePortConsumed
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.6.{{ $index }}'
+                    index: 'snAgentPoePortConsumed.{{ $index }}'
+                    group: 'Port PoE'
+                    divisor: 1000
+                    descr: 'Port {{ $ifDescr }} PoE Consumed'
+                -
+                    oid: FOUNDRY-POE-MIB::snAgentPoeUnitTable
+                    value: FOUNDRY-POE-MIB::snAgentPoeUnitPowerCapacityTotal
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.2.{{ $index }}'
+                    index: 'snAgentPoeUnitPowerCapacityTotal.{{ $index }}'
+                    group: 'Unit PoE'
+                    divisor: 1000
+                    descr: 'Unit {{ $index }} Total PoE Power'
+                -
+                    oid: FOUNDRY-POE-MIB::snAgentPoeUnitTable
+                    value: FOUNDRY-POE-MIB::snAgentPoeUnitPowerCapacityFree
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.3.{{ $index }}'
+                    index: 'snAgentPoeUnitPowerCapacityFree.{{ $index }}'
+                    group: 'Unit PoE'
+                    divisor: 1000
+                    descr: 'Unit {{ $index }} Free PoE Power'
+        
+        # Temperature monitoring
+        temperature:
+            data:
+                -
+                    oid: snAgentTempTable
+                    value: snAgentTempValue
+                    divisor: 2
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.2.13.1.1.4.{{ $index }}'
+                    descr: snAgentTempSensorDescr
+                    index: '{{ $index }}'
+                    group: 'Module Temperatures'
+                    skip_values:
+                        -
+                            oid: snAgentTemp2SensorDescr.1.1.1
+                            op: 'exists'
+                            value: true
+                -
+                    oid: snAgentTemp2Table
+                    value: snAgentTemp2Value
+                    divisor: 2
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.2.13.3.1.5.{{ $index }}'
+                    descr: 'Unit {{ $subindex0 }} Sensor {{ $subindex1 }} {{ $snAgentTemp2SensorDescr }}'
+                    index: '{{ $index }}'
+                    group: 'Module Temperatures'
+                -
+                    oid: snIfOpticalMonitoringInfoTable
+                    value: snIfOpticalMonitoringTemperature
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.3.3.6.1.1.{{ $index }}'
+                    descr: '{{ $ifDescr }} Transceiver'
+                    index: 'snIfOpticalMonitoringTemperature.{{ $index }}'
+                    group: 'Transceiver Temperatures'
+        
+        # State sensors (PSU, Fan, Stack)
+        state:
+            data:
+                -
+                    oid: snChasPwrSupplyTable
+                    value: snChasPwrSupplyOperStatus
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.1.2.1.1.3.{{ $index }}'
+                    descr: 'Power Supply {{ $index }}'
+                    index: '{{ $index }}'
+                    skip_values: 1
+                    group: Power Supply
+                    state_name: snChasPwrSupplyOperStatus
+                    states:
+                        - { value: 1, descr: other, graph: 0, generic: 3 }
+                        - { value: 2, descr: normal, graph: 1, generic: 0 }
+                        - { value: 3, descr: failure, graph: 0, generic: 2 }
+                -
+                    oid: snChasFanTable
+                    value: snChasFanOperStatus
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.1.3.1.1.3.{{ $index }}'
+                    descr: '{{ $snChasFanDescription }}'
+                    index: 'snChasFanOperStatus.{{ $index }}'
+                    group: Fan Status
+                    state_name: snChasFanOperStatus
+                    states:
+                        - { value: 1, descr: other, graph: 0, generic: 3 }
+                        - { value: 2, descr: normal, graph: 1, generic: 0 }
+                        - { value: 3, descr: failure, graph: 0, generic: 2 }
+                -
+                    oid: snStackingGlobalConfigState
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.1.1.{{ $index }}'
+                    descr: 'Stack Configuration'
+                    index: 'snStackingGlobalConfigState.{{ $index }}'
+                    group: Stack Status
+                    state_name: snStackingGlobalConfigState
+                    states:
+                        - { value: 0, descr: none, graph: 0, generic: 3 }
+                        - { value: 1, descr: enabled, graph: 1, generic: 0 }
+                        - { value: 2, descr: disabled, graph: 0, generic: 1 }
+                -
+                    oid: snStackingOperUnitTable
+                    value: snStackingOperUnitState
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.5.{{ $index }}'
+                    descr: 'Unit {{ $index }} State'
+                    index: 'snStackingOperUnitState.{{ $index }}'
+                    skip_values:
+                        -
+                            oid: snStackingGlobalConfigState.0
+                            op: '!='
+                            value: 1
+                    group: Stack Status
+                    state_name: snStackingOperUnitState
+                    states:
+                        - { value: 1, descr: local, graph: 1, generic: 0 }
+                        - { value: 2, descr: remote, graph: 1, generic: 0 }
+                        - { value: 3, descr: reserved, graph: 0, generic: 2 }
+                        - { value: 4, descr: empty, graph: 0, generic: 2 }
+                -
+                    oid: snStackingOperUnitTable
+                    value: snStackingOperUnitStackPort1State
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.8.{{ $index }}'
+                    descr: 'Unit {{ $index }} Stack Port 1 → Unit {{ $snStackingOperUnitNeighbor1 }}'
+                    index: 'snStackingOperUnitStackPort1State.{{ $index }}'
+                    skip_values:
+                        -
+                            oid: snStackingGlobalConfigState.0
+                            op: '!='
+                            value: 1
+                        -
+                            oid: snStackingOperUnitStackPort1
+                            op: '='
+                            value: 0
+                    group: Stack Ports
+                    state_name: snStackingOperUnitStackPortState
+                    states:
+                        - { value: 1, descr: other, graph: 0, generic: 3 }
+                        - { value: 2, descr: up, graph: 1, generic: 0 }
+                        - { value: 3, descr: down, graph: 0, generic: 2 }
+                -
+                    oid: snStackingOperUnitTable
+                    value: snStackingOperUnitStackPort2State
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.10.{{ $index }}'
+                    descr: 'Unit {{ $index }} Stack Port 2 → Unit {{ $snStackingOperUnitNeighbor2 }}'
+                    index: 'snStackingOperUnitStackPort2State.{{ $index }}'
+                    skip_values:
+                        -
+                            oid: snStackingGlobalConfigState.0
+                            op: '!='
+                            value: 1
+                        -
+                            oid: snStackingOperUnitStackPort2
+                            op: '='
+                            value: 0
+                    group: Stack Ports
+                    state_name: snStackingOperUnitStackPortState
+                    states:
+                        - { value: 1, descr: other, graph: 0, generic: 3 }
+                        - { value: 2, descr: up, graph: 1, generic: 0 }
+                        - { value: 3, descr: down, graph: 0, generic: 2 }
+
+discovery_modules:
+    os: true
+    ports: true
+    entity-physical: true
+    sensors: true
+    storage: true
+    stp: true
+    lldp: true
+    vlans: true
+
+poller_modules:
+    os: true
+    ports: true
+    entity-physical: true
+    sensors: true
+    stp: true
+    lldp: true
+
+stackable: true

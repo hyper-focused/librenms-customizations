@@ -1,0 +1,44 @@
+# Brocade Stack OS Detection
+# Unified detection for Foundry/Brocade/Ruckus stacked switches
+# Covers: FCX series, ICX 6450/6610/6650/7150/7250/7450/7650/7750
+
+os: brocade-stack
+text: 'Brocade Stacking System'
+type: network
+icon: brocade
+group: brocade
+over:
+    - { graph: device_bits, text: 'Device Traffic' }
+    - { graph: device_processor, text: 'CPU Usage' }
+    - { graph: device_mempool, text: 'Memory Usage' }
+mib_dir: foundry
+discovery:
+    -
+        # Primary detection: Stacking System in sysDescr
+        # Matches: "Brocade Communications Systems, Inc. Stacking System FCX648..."
+        # Matches: "Brocade Communications Systems, Inc. Stacking System ICX6450-48..."
+        # Matches: "Ruckus Stacking System ICX7150..."
+        sysDescr:
+            - Stacking System
+        # Secondary detection: Verified sysObjectID pattern
+        # FCX648: .1.3.6.1.4.1.1991.1.3.48.2.1 (verified)
+        # ICX6450-48: .1.3.6.1.4.1.1991.1.3.48.5.1 (verified)
+        sysObjectID:
+            - .1.3.6.1.4.1.1991.1.3.48  # FCX/ICX6xxx pattern (enterprise 1991)
+    -
+        # Alternate detection for newer firmware
+        # Matches: "Ruckus ICX ... FastIron Version..."
+        sysDescr:
+            - Stacking System
+        sysObjectID:
+            - .1.3.6.1.4.1.1588.2.1.1.1.3  # Potential Brocade enterprise OID
+
+oids:
+    no_bulk:
+        - ifPhysAddress
+
+register_mibs:
+    - FOUNDRY-SN-ROOT-MIB
+    - FOUNDRY-SN-AGENT-MIB
+    - FOUNDRY-SN-SWITCH-GROUP-MIB
+    - FOUNDRY-SN-STACKING-MIB
