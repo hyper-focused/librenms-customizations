@@ -87,61 +87,12 @@ class BrocadeStack extends Foundry
         $stackStateQuery = \SnmpQuery::get('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalConfigState.0');
         $stackState = $stackStateQuery->value();
 
-        // Extensive debug logging for stack detection issues
-        \Log::debug("BrocadeStack [H1]: Starting stack topology discovery", [
-            'device_id' => $device->device_id,
-            'hostname' => $device->hostname,
-            'ip' => $device->ip,
-            'sysDescr' => $device->sysDescr,
-            'sysObjectID' => $device->sysObjectID,
-            'os' => $device->os,
-            'hardware' => $device->hardware,
-            'hypothesis' => 'Device identification - checking if this is actually a stacked switch'
-        ]);
-
-        // Debug logging for stack state OID query
-        \Log::debug("BrocadeStack [H2]: Attempting snStackingGlobalConfigState.0 query", [
-            'oid' => 'FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalConfigState.0',
-            'full_oid' => '.1.3.6.1.4.1.1991.1.1.3.31.1.1.0',
-            'hypothesis' => 'Testing if stack config state OID exists on stacked switches'
-        ]);
-
-        // Debug logging for stack state check
-        \Log::debug("BrocadeStack [H3]: Stack state query result", [
-            'device_id' => $device->device_id,
-            'stackState' => $stackState,
-            'stackState_type' => gettype($stackState),
-            'stackState_null' => $stackState === null,
-            'stackState_equals_1' => $stackState == 1,
-            'will_take_fallback_path' => $stackState === null || $stackState != 1,
-            'hypothesis' => 'Analyzing why stack state query fails on real stacks'
-        ]);
-
         // If the OID doesn't exist or stacking is not enabled, check if device is stack-capable
         if ($stackState === null || $stackState != 1) {
-            // Debug logging for fallback path
-            \Log::debug("BrocadeStack [H4]: Taking fallback path - stack not enabled or OID missing", [
-                'condition_stackState_null' => $stackState === null,
-                'condition_stackState_not_1' => $stackState != 1,
-                'stackState_value' => $stackState,
-                'hypothesis' => 'Why does stack state OID not exist on stacked switches?'
-            ]);
-
             // Check if this is a standalone stack-capable device
             $isStackCapable = $this->isStackCapableDevice($device);
 
-            \Log::debug("BrocadeStack [H5]: Stack capability detection", [
-                'isStackCapable' => $isStackCapable,
-                'sysDescr_contains_stacking' => strpos($device->sysDescr, 'Stacking System') !== false,
-                'sysObjectID_foundry_pattern' => strpos($device->sysObjectID, '.1.3.6.1.4.1.1991.1.3.') === 0,
-                'hypothesis' => 'Device detection working correctly for stack-capable devices?'
-            ]);
-
             if (!$isStackCapable) {
-                \Log::debug("BrocadeStack [H6]: Device not stack capable - cleaning up", [
-                    'device_id' => $device->device_id,
-                    'hypothesis' => 'False negative in stack capability detection?'
-                ]);
                 // Not stack-capable, clean up old data
                 IronwareStackTopology::where('device_id', $device->device_id)->delete();
                 return;
@@ -169,30 +120,8 @@ class BrocadeStack extends Foundry
         $stackMacQuery = \SnmpQuery::get('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalMacAddress.0');
         $stackMac = $stackMacQuery->value();
 
-        // Debug logging for topology and MAC queries
-        \Log::debug("BrocadeStack: Stack topology and MAC queries", [
-            'topology_value' => $topologyValue,
-            'topology_exists' => $topologyQuery->value() !== null,
-            'stack_mac' => $stackMac,
-            'stack_mac_exists' => $stackMacQuery->value() !== null
-        ]);
-
-        // Get all stack members from operational table - handle missing OID
-        \Log::debug("BrocadeStack [H7]: Attempting operational stack table query", [
-            'oid' => 'FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingOperUnitTable',
-            'full_oid_base' => '.1.3.6.1.4.1.1991.1.1.3.31.3.1',
-            'hypothesis' => 'Does operational stack table exist on real stacked switches?'
-        ]);
-
         $membersQuery = \SnmpQuery::walk('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingOperUnitTable');
         $members = $membersQuery->table();
-
-        // Debug logging for members query
-        \Log::debug("BrocadeStack: Stack members query", [
-            'members_found' => !empty($members),
-            'members_count' => count($members),
-            'members_keys' => !empty($members) ? array_keys($members) : []
-        ]);
 
         if (empty($members)) {
             // No stack members found via standard MIB, try alternative detection
@@ -580,14 +509,11 @@ class BrocadeStack extends Foundry
         $configMembersQuery = \SnmpQuery::walk('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingConfigUnitTable');
         $configMembers = $configMembersQuery->table();
 
-        \Log::debug("BrocadeStack: Trying configuration table fallback", [
-            'config_members_found' => !empty($configMembers),
-            'config_members_count' => count($configMembers)
-        ]);
-
         if (!empty($configMembers)) {
-            // Use configuration table data to create stack records
-            $this->processConfigTableMembers($device, $configMembers);
+            // Fetch topology/mac once and pass in to avoid duplicate SNMP in processConfigTableMembers
+            $topologyValue = \SnmpQuery::get('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalTopology.0')->value() ?? 3;
+            $stackMac = \SnmpQuery::get('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalMacAddress.0')->value();
+            $this->processConfigTableMembers($device, $configMembers, $topologyValue, $stackMac);
             return;
         }
 
@@ -620,23 +546,23 @@ class BrocadeStack extends Foundry
      *
      * @param Device $device
      * @param array $configMembers
+     * @param int|null $topologyValue From snStackingGlobalTopology.0 (caller fetches once)
+     * @param string|null $stackMac From snStackingGlobalMacAddress.0 (caller fetches once)
      * @return void
      */
-    private function processConfigTableMembers(Device $device, array $configMembers): void
+    private function processConfigTableMembers(Device $device, array $configMembers, ?int $topologyValue = null, ?string $stackMac = null): void
     {
         $memberCount = count($configMembers);
+        $topologyValue = $topologyValue ?? 3;
 
-        // Get topology from global config if available
-        $topologyValue = \SnmpQuery::get('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalTopology.0')->value() ?? 3;
-
-        // Create topology record
+        // Create topology record (caller already fetched topology/mac)
         IronwareStackTopology::updateOrCreate(
             ['device_id' => $device->device_id],
             [
                 'topology' => $this->mapTopologyValue($topologyValue),
                 'unit_count' => $memberCount,
                 'master_unit' => 1, // Assume first unit is master in config
-                'stack_mac' => \SnmpQuery::get('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalMacAddress.0')->value(),
+                'stack_mac' => $stackMac,
             ]
         );
 

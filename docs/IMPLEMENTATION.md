@@ -51,6 +51,18 @@ See [scripts/README.md](../scripts/README.md) for the deploy script.
    - Fix: `sudo -u librenms bash -c 'cd /opt/librenms && php artisan migrate --force'`
 2. If migration is not run, BrocadeStack now skips stack topology discovery and logs a warning instead of throwing; OS discovery and other modules still run.
 
+## Entity-state and entity-physical
+
+**entity-state** should remain **disabled** for `brocade-stack`. It depends on entity-physical (ENTITY-MIB::entPhysicalTable). We disable entity-physical because FCX/ICX typically do not implement ENTITY-MIB, so entity-state would have no entities to show and would add overhead with no benefit.
+
+## Discovery optimizations
+
+- **entity-physical disabled** for `brocade-stack`: FCX/ICX typically lack ENTITY-MIB::entPhysicalTable; leaving it enabled caused a failed bulkwalk every run. Discovery and poller both set `entity-physical: false`.
+- **Reduced BrocadeStack logging**: Verbose `\Log::debug()` blocks (H1–H7, hypothesis-style) were removed from the hot path to cut log I/O and string building.
+- **No duplicate SNMP in config-table path**: When stack data comes from the config table, topology and stack MAC are fetched once in `discoverStackViaAlternativeMethod()` and passed into `processConfigTableMembers()` instead of fetching again inside that method.
+
+See [SNMP_REFERENCE.md](SNMP_REFERENCE.md) for OIDs.
+
 ## Troubleshooting discovery (FCX648 / IronWare 08.0.30u)
 
 - **FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalConfigState.0: Unknown Object Identifier** — Normal on some FCX/IronWare versions. The code falls back to standalone or alternative detection (Stack ports, sysName).
