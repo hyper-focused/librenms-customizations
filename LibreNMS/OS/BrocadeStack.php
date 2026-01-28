@@ -194,28 +194,6 @@ class BrocadeStack extends Foundry
             'members_keys' => !empty($members) ? array_keys($members) : []
         ]);
 
-        // #region agent log H8 - Operational table query result
-        fetch('http://127.0.0.1:7242/ingest/4afe5754-0a0d-4840-8046-3abcfb0bc2d3', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                location: 'BrocadeStack.php:90',
-                message: 'Operational stack table query result',
-                data: {
-                    members_found: !empty($members),
-                    members_count: count($members),
-                    members_keys: !empty($members) ? array_keys($members) : [],
-                    members_sample: !empty($members) ? array_slice($members, 0, 2) : null,
-                    query_error: $membersQuery->error()
-                },
-                timestamp: Date.now(),
-                sessionId: 'debug-session',
-                runId: 'stack-debug',
-                hypothesisId: 'H8'
-            })
-        }).catch(() => {});
-        // #endregion
-
         if (empty($members)) {
             // No stack members found via standard MIB, try alternative detection
             $this->discoverStackViaAlternativeMethod($device);
@@ -429,49 +407,8 @@ class BrocadeStack extends Foundry
         ];
 
         foreach ($alternativeOIDs as $name => $oid) {
-            // #region agent log H13 - Trying alternative OID
-            fetch('http://127.0.0.1:7242/ingest/4afe5754-0a0d-4840-8046-3abcfb0bc2d3', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    location: 'BrocadeStack.php:tryAdditionalStackOIDs',
-                    message: 'Trying alternative stack OID',
-                    data: {
-                        oid_name: $name,
-                        oid: $oid
-                    },
-                    timestamp: Date.now(),
-                    sessionId: 'debug-session',
-                    runId: 'stack-debug',
-                    hypothesisId: 'H13'
-                })
-            }).catch(() => {});
-            // #endregion
-
             $query = \SnmpQuery::get($oid);
             $value = $query->value();
-
-            // #region agent log H14 - Alternative OID result
-            fetch('http://127.0.0.1:7242/ingest/4afe5754-0a0d-4840-8046-3abcfb0bc2d3', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    location: 'BrocadeStack.php:tryAdditionalStackOIDs',
-                    message: 'Alternative OID query result',
-                    data: {
-                        oid_name: $name,
-                        oid: $oid,
-                        value: $value,
-                        value_exists: $value !== null,
-                        query_error: $query->error()
-                    },
-                    timestamp: Date.now(),
-                    sessionId: 'debug-session',
-                    runId: 'stack-debug',
-                    hypothesisId: 'H14'
-                })
-            }).catch(() => {});
-            // #endregion
 
             if ($value !== null) {
                 $stackDataFound = true;
@@ -639,25 +576,6 @@ class BrocadeStack extends Foundry
      */
     private function discoverStackViaAlternativeMethod(Device $device): void
     {
-        // #region agent log H9 - Alternative method - trying configuration table
-        fetch('http://127.0.0.1:7242/ingest/4afe5754-0a0d-4840-8046-3abcfb0bc2d3', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                location: 'BrocadeStack.php:discoverStackViaAlternativeMethod',
-                message: 'Trying configuration table as alternative to operational table',
-                data: {
-                    oid: 'FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingConfigUnitTable',
-                    full_oid_base: '.1.3.6.1.4.1.1991.1.1.3.31.2.1'
-                },
-                timestamp: Date.now(),
-                sessionId: 'debug-session',
-                runId: 'stack-debug',
-                hypothesisId: 'H9'
-            })
-        }).catch(() => {});
-        // #endregion
-
         // Try configuration table as alternative to operational table
         $configMembersQuery = \SnmpQuery::walk('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingConfigUnitTable');
         $configMembers = $configMembersQuery->table();
@@ -666,28 +584,6 @@ class BrocadeStack extends Foundry
             'config_members_found' => !empty($configMembers),
             'config_members_count' => count($configMembers)
         ]);
-
-        // #region agent log H10 - Configuration table query result
-        fetch('http://127.0.0.1:7242/ingest/4afe5754-0a0d-4840-8046-3abcfb0bc2d3', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                location: 'BrocadeStack.php:configMembersQuery',
-                message: 'Configuration table query result',
-                data: {
-                    config_members_found: !empty($configMembers),
-                    config_members_count: count($configMembers),
-                    config_members_keys: !empty($configMembers) ? array_keys($configMembers) : [],
-                    config_members_sample: !empty($configMembers) ? array_slice($configMembers, 0, 2) : null,
-                    query_error: $configMembersQuery->error()
-                },
-                timestamp: Date.now(),
-                sessionId: 'debug-session',
-                runId: 'stack-debug',
-                hypothesisId: 'H10'
-            })
-        }).catch(() => {});
-        // #endregion
 
         if (!empty($configMembers)) {
             // Use configuration table data to create stack records
@@ -698,50 +594,12 @@ class BrocadeStack extends Foundry
         // Try additional alternative OIDs before giving up
         $foundAnyStackData = $this->tryAdditionalStackOIDs($device);
 
-        // #region agent log H11 - Additional OID attempts result
-        fetch('http://127.0.0.1:7242/ingest/4afe5754-0a0d-4840-8046-3abcfb0bc2d3', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                location: 'BrocadeStack.php:fallback',
-                message: 'Additional stack OID attempts completed',
-                data: {
-                    foundAnyStackData: $foundAnyStackData,
-                    device_hostname: $device->hostname
-                },
-                timestamp: Date.now(),
-                sessionId: 'debug-session',
-                runId: 'stack-debug',
-                hypothesisId: 'H11'
-            })
-        }).catch(() => {});
-        // #endregion
-
         if ($foundAnyStackData) {
             return; // Successfully found stack data via alternative methods
         }
 
         // No stack information available at all
         \Log::warning("Standard Foundry stack MIBs not available on device {$device->hostname}. Treating as standalone stack-capable device.");
-
-        // #region agent log H12 - Final fallback to standalone
-        fetch('http://127.0.0.1:7242/ingest/4afe5754-0a0d-4840-8046-3abcfb0bc2d3', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                location: 'BrocadeStack.php:standalone-fallback',
-                message: 'No stack data found - falling back to standalone mode',
-                data: {
-                    device_id: $device->device_id,
-                    hostname: $device->hostname
-                },
-                timestamp: Date.now(),
-                sessionId: 'debug-session',
-                runId: 'stack-debug',
-                hypothesisId: 'H12'
-            })
-        }).catch(() => {});
-        // #endregion
 
         // Fall back to standalone discovery
         IronwareStackTopology::updateOrCreate(
