@@ -27,6 +27,7 @@
 
 namespace LibreNMS\OS\Shared;
 
+use LibreNMS\Device\Processor;
 use LibreNMS\Interfaces\Discovery\ProcessorDiscovery;
 use LibreNMS\OS;
 
@@ -34,40 +35,49 @@ class Foundry extends OS implements ProcessorDiscovery
 {
     /**
      * Discover processors for Foundry-based devices
-     * Uses FOUNDRY-SN-AGENT-MIB::snAgentCpuUtilTable for per-slot/module CPU monitoring
+     * Uses FOUNDRY-SN-AGENT-MIB::snAgentCpuUtilTable for per-slot/module CPU monitoring.
+     * Returns an array of Processor objects (required by ProcessorDiscovery interface).
      *
-     * @return void
+     * @return array<int, Processor>
      */
-    public function discoverProcessors(): void
+    public function discoverProcessors(): array
     {
-        $device = $this->getDevice();
+        $processors = [];
 
-        // Get CPU utilization data from snAgentCpuUtilTable
-        // This provides per-module/slot CPU utilization
+        // Get CPU utilization data from snAgentCpuUtilTable (per-module/slot)
         $cpuData = \SnmpQuery::walk('FOUNDRY-SN-AGENT-MIB::snAgentCpuUtilTable')->table();
 
-        if (!empty($cpuData)) {
-            foreach ($cpuData as $index => $data) {
-                // Index format: slot.module (e.g., 1.1, 2.1)
-                // Use 5-minute average (300 seconds) for stability
-                $util5min = $data['snAgentCpuUtilValue'] ?? null;
+        if (empty($cpuData)) {
+            return $processors;
+        }
 
-                if ($util5min !== null) {
-                    // Create processor entry
-                    // Index represents the slot/module combination
-                    $this->discoverProcessor(
-                        'FOUNDRY-SN-AGENT-MIB',
-                        $index,
-                        $util5min,
-                        'snAgentCpuUtilValue',
-                        "Slot {$index}",
-                        1, // Precision
-                        $index, // hrDeviceIndex (reuse index)
-                        null, // entPhysicalIndex
-                        true // perc is oid
-                    );
-                }
+        foreach ($cpuData as $index => $data) {
+            $util5min = $data['snAgentCpuUtilValue'] ?? null;
+            if ($util5min === null || ! is_numeric($util5min)) {
+                continue;
+            }
+
+            // OID for this index (snAgentCpuUtilValue.INDEX)
+            $oid = '.1.3.6.1.4.1.1991.1.1.2.1.1.1.' . $index;
+
+            $processor = Processor::discover(
+                'FOUNDRY-SN-AGENT-MIB',
+                $this->getDeviceId(),
+                $oid,
+                (string) $index,
+                "Slot {$index}",
+                1,
+                (int) $util5min,
+                null,
+                null,
+                (string) $index
+            );
+
+            if ($processor->isValid()) {
+                $processors[] = $processor;
             }
         }
+
+        return $processors;
     }
 }
