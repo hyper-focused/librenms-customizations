@@ -36,3 +36,6 @@ captures/
 
 # Database
 *.sql.backup
+
+# Local debug / one-off scripts
+debug_stack_detection.php
