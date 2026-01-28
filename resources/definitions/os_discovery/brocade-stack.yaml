@@ -11,14 +11,18 @@ modules:
                 - FOUNDRY-SN-AGENT-MIB::snAgentConfigModuleDescription
         data:
             -
-                # Global system memory (stack master)
+                # Global system memory (stack master or standalone)
+                # For stacked: Represents master unit system memory
+                # For standalone: Represents single unit system memory
                 total: FOUNDRY-SN-AGENT-MIB::snAgSystemDRAMTotal
                 free: FOUNDRY-SN-AGENT-MIB::snAgSystemDRAMFree
                 descr: 'System Memory'
                 type: brocade-system
             -
                 # Per-unit/per-module memory (stack-aware via index)
-                # Index represents unit/module in stacked systems
+                # STACKED CONFIG: Index represents unit ID in stacked systems (1, 2, 3, etc.)
+                # STANDALONE CONFIG: Index is typically 1 (single unit)
+                # This OID automatically adapts: stacked systems return multiple entries, standalone returns one
                 total: FOUNDRY-SN-AGENT-MIB::snAgentBrdMemoryTotal
                 percent_used: FOUNDRY-SN-AGENT-MIB::snAgentBrdMemoryUtil100thPercent
                 type: brocade-dyn
@@ -26,11 +30,7 @@ modules:
     
     os:
         hardware_mib: FOUNDRY-SN-ROOT-MIB
-        # Extract version from sysDescr
-        # Matches: "IronWare Version 08.0.30uT7f1" or "FastIron Version 08.0.95"
         sysDescr_regex: '/(?:IronWare|FastIron) Version (?<version>[\d.]+[a-zA-Z0-9]*)/i'
-        # Extract hardware from sysDescr
-        # Matches: "FCX648" or "ICX6450-48" or "ICX7150-48P"
         hardware: 
             - FOUNDRY-SN-AGENT-MIB::snChasUnitDescription.1
         hardware_regex: '/(?:FCX|ICX)\d+[A-Z0-9-]*/i'
@@ -46,8 +46,6 @@ modules:
                         - snAgentTemp2SensorDescr
         
         # Optical transceiver monitoring (interface-based, stack-aware)
-        # Interfaces in stacks use format: unit/slot/port (e.g., 1/1/1, 2/1/1)
-        # Modern format: group=transceiver, entPhysicalIndex_measured=ports
         # This makes transceiver data appear in Ports → Transceivers tab
         dbm:
             data:
@@ -196,9 +194,10 @@ modules:
                 -
                     # Power Supply monitoring (stack-aware via multi-level index)
                     # Index format: unit.psu (e.g., 1.1 = unit 1 PSU 1, 2.1 = unit 2 PSU 1)
+                    # Table: snChasPwrSupplyTable (.1.3.6.1.4.1.1991.1.1.1.2.2.1)
                     oid: snChasPwrSupplyTable
                     value: snChasPwrSupplyOperStatus
-                    num_oid: '.1.3.6.1.4.1.1991.1.1.1.2.1.1.3.{{ $index }}'
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.1.2.2.1.4.{{ $index }}'
                     descr: 'Unit {{ $subindex0 }} {{ $snChasPwrSupplyDescription }}'
                     index: '{{ $index }}'
                     skip_values: 1
@@ -211,9 +210,10 @@ modules:
                 -
                     # Fan monitoring (stack-aware via multi-level index)
                     # Index format: unit.fan (e.g., 1.1 = unit 1 fan 1, 2.1 = unit 2 fan 1)
+                    # Table: snChasFanTable (.1.3.6.1.4.1.1991.1.1.1.3.2.1)
                     oid: snChasFanTable
                     value: snChasFanOperStatus
-                    num_oid: '.1.3.6.1.4.1.1991.1.1.1.3.1.1.3.{{ $index }}'
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.1.3.2.1.4.{{ $index }}'
                     descr: 'Unit {{ $subindex0 }} {{ $snChasFanDescription }}'
                     index: 'snChasFanOperStatus.{{ $index }}'
                     group: Fan Status
@@ -222,77 +222,80 @@ modules:
                         - { value: 1, descr: other, graph: 0, generic: 3 }
                         - { value: 2, descr: normal, graph: 1, generic: 0 }
                         - { value: 3, descr: failure, graph: 0, generic: 2 }
-                -
-                    oid: snStackingGlobalConfigState
-                    num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.1.1.{{ $index }}'
-                    descr: 'Stack Configuration'
-                    index: 'snStackingGlobalConfigState.{{ $index }}'
-                    group: Stack Status
-                    state_name: snStackingGlobalConfigState
-                    states:
-                        - { value: 0, descr: none, graph: 0, generic: 3 }
-                        - { value: 1, descr: enabled, graph: 1, generic: 0 }
-                        - { value: 2, descr: disabled, graph: 0, generic: 1 }
-                -
-                    oid: snStackingOperUnitTable
-                    value: snStackingOperUnitState
-                    num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.5.{{ $index }}'
-                    descr: 'Unit {{ $index }} State'
-                    index: 'snStackingOperUnitState.{{ $index }}'
-                    skip_values:
-                        -
-                            oid: snStackingGlobalConfigState.0
-                            op: '!='
-                            value: 1
-                    group: Stack Status
-                    state_name: snStackingOperUnitState
-                    states:
-                        - { value: 1, descr: local, graph: 1, generic: 0 }
-                        - { value: 2, descr: remote, graph: 1, generic: 0 }
-                        - { value: 3, descr: reserved, graph: 0, generic: 2 }
-                        - { value: 4, descr: empty, graph: 0, generic: 2 }
-                -
-                    oid: snStackingOperUnitTable
-                    value: snStackingOperUnitStackPort1State
-                    num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.8.{{ $index }}'
-                    descr: 'Unit {{ $index }} Stack Port 1 → Unit {{ $snStackingOperUnitNeighbor1 }}'
-                    index: 'snStackingOperUnitStackPort1State.{{ $index }}'
-                    skip_values:
-                        -
-                            oid: snStackingGlobalConfigState.0
-                            op: '!='
-                            value: 1
-                        -
-                            oid: snStackingOperUnitStackPort1
-                            op: '='
-                            value: 0
-                    group: Stack Ports
-                    state_name: snStackingOperUnitStackPortState
-                    states:
-                        - { value: 1, descr: other, graph: 0, generic: 3 }
-                        - { value: 2, descr: up, graph: 1, generic: 0 }
-                        - { value: 3, descr: down, graph: 0, generic: 2 }
-                -
-                    oid: snStackingOperUnitTable
-                    value: snStackingOperUnitStackPort2State
-                    num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.10.{{ $index }}'
-                    descr: 'Unit {{ $index }} Stack Port 2 → Unit {{ $snStackingOperUnitNeighbor2 }}'
-                    index: 'snStackingOperUnitStackPort2State.{{ $index }}'
-                    skip_values:
-                        -
-                            oid: snStackingGlobalConfigState.0
-                            op: '!='
-                            value: 1
-                        -
-                            oid: snStackingOperUnitStackPort2
-                            op: '='
-                            value: 0
-                    group: Stack Ports
-                    state_name: snStackingOperUnitStackPortState
-                    states:
-                        - { value: 1, descr: other, graph: 0, generic: 3 }
-                        - { value: 2, descr: up, graph: 1, generic: 0 }
-                        - { value: 3, descr: down, graph: 0, generic: 2 }
+                # Stack sensors disabled - MIBs don't exist on firmware 08.0.30u
+                # OIDs verified against FOUNDRY-SN-STACKING-MIB from LibreNMS repository
+                # Uncomment when stack MIBs become available on target firmware
+                # -
+                #     oid: snStackingGlobalConfigState
+                #     num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.1.1.0'
+                #     descr: 'Stack Configuration'
+                #     index: 'snStackingGlobalConfigState.0'
+                #     group: Stack Status
+                #     state_name: snStackingGlobalConfigState
+                #     states:
+                #         - { value: 0, descr: none, graph: 0, generic: 3 }
+                #         - { value: 1, descr: enabled, graph: 1, generic: 0 }
+                #         - { value: 2, descr: disabled, graph: 0, generic: 1 }
+                # -
+                #     oid: snStackingOperUnitTable
+                #     value: snStackingOperUnitState
+                #     num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.5.{{ $index }}'
+                #     descr: 'Unit {{ $index }} State'
+                #     index: 'snStackingOperUnitState.{{ $index }}'
+                #     skip_values:
+                #         -
+                #             oid: snStackingGlobalConfigState.0
+                #             op: '!='
+                #             value: 1
+                #     group: Stack Status
+                #     state_name: snStackingOperUnitState
+                #     states:
+                #         - { value: 1, descr: local, graph: 1, generic: 0 }
+                #         - { value: 2, descr: remote, graph: 1, generic: 0 }
+                #         - { value: 3, descr: reserved, graph: 0, generic: 2 }
+                #         - { value: 4, descr: empty, graph: 0, generic: 2 }
+                # -
+                #     oid: snStackingOperUnitTable
+                #     value: snStackingOperUnitStackPort1State
+                #     num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.8.{{ $index }}'
+                #     descr: 'Unit {{ $index }} Stack Port 1 → Unit {{ $snStackingOperUnitNeighbor1 }}'
+                #     index: 'snStackingOperUnitStackPort1State.{{ $index }}'
+                #     skip_values:
+                #         -
+                #             oid: snStackingGlobalConfigState.0
+                #             op: '!='
+                #             value: 1
+                #         -
+                #             oid: snStackingOperUnitStackPort1
+                #             op: '='
+                #             value: 0
+                #     group: Stack Ports
+                #     state_name: snStackingOperUnitStackPortState
+                #     states:
+                #         - { value: 1, descr: other, graph: 0, generic: 3 }
+                #         - { value: 2, descr: up, graph: 1, generic: 0 }
+                #         - { value: 3, descr: down, graph: 0, generic: 2 }
+                # -
+                #     oid: snStackingOperUnitTable
+                #     value: snStackingOperUnitStackPort2State
+                #     num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.10.{{ $index }}'
+                #     descr: 'Unit {{ $index }} Stack Port 2 → Unit {{ $snStackingOperUnitNeighbor2 }}'
+                #     index: 'snStackingOperUnitStackPort2State.{{ $index }}'
+                #     skip_values:
+                #         -
+                #             oid: snStackingGlobalConfigState.0
+                #             op: '!='
+                #             value: 1
+                #         -
+                #             oid: snStackingOperUnitStackPort2
+                #             op: '='
+                #             value: 0
+                #     group: Stack Ports
+                #     state_name: snStackingOperUnitStackPortState
+                #     states:
+                #         - { value: 1, descr: other, graph: 0, generic: 3 }
+                #         - { value: 2, descr: up, graph: 1, generic: 0 }
+                #         - { value: 3, descr: down, graph: 0, generic: 2 }
 
 discovery_modules:
     os: true

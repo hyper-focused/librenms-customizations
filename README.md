@@ -29,16 +29,27 @@ All platforms run IronWare (Foundry) or FastIron (Brocade/Ruckus) operating syst
 
 ## Project Status
 
-🚧 **Planning Phase** - Initial project setup and planning
+✅ **Implementation Phase** - Core functionality implemented with known limitations
 
-See [PROJECT_PLAN.md](PROJECT_PLAN.md) for detailed project planning and technical approach.
+**Current Status**:
+- ✅ OS detection working (sysObjectID-based)
+- ✅ Stack-capable device detection working
+- ⚠️ Stack MIBs don't work on firmware 08.0.30u (see [LIMITATIONS.md](docs/LIMITATIONS.md))
+- ✅ Alternative detection methods implemented (interface-based, sysName parsing)
+- ✅ Database schema created
+- ✅ Models and relationships implemented
+
+**Known Limitations**: See [docs/LIMITATIONS.md](docs/LIMITATIONS.md) for detailed information about working/non-working OIDs.
+
+See [PROJECT_PLAN.md](PROJECT_PLAN.md) for detailed project planning and [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md) for current status.
 
 ## Quick Links
 
-- **Project Plan**: [PROJECT_PLAN.md](PROJECT_PLAN.md) - Comprehensive project planning document
-- **Implementation Notes**: Coming soon
-- **SNMP Reference**: Coming soon
-- **Testing Guide**: Coming soon
+- **Project Plan**: [PROJECT_PLAN.md](PROJECT_PLAN.md) - Comprehensive project planning
+- **Project Status**: [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md) - Current status and summary
+- **SNMP Reference**: [docs/SNMP_REFERENCE.md](docs/SNMP_REFERENCE.md) - OID reference guide
+- **Limitations**: [docs/LIMITATIONS.md](docs/LIMITATIONS.md) - Known issues and workarounds
+- **Documentation Index**: [docs/README.md](docs/README.md) - All documentation
 
 ## Background
 

@@ -67,6 +67,16 @@ class IronwareStackMember extends Model
     }
 
     /**
+     * Get the stack topology this member belongs to (alias for topology)
+     *
+     * @return BelongsTo
+     */
+    public function stackTopology(): BelongsTo
+    {
+        return $this->topology();
+    }
+
+    /**
      * Check if this unit is the stack master
      *
      * @return bool

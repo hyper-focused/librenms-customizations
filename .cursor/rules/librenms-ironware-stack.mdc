@@ -3,7 +3,7 @@ description: Cursor AI Rules for LibreNMS IronWare/FastIron Stack Discovery Proj
 alwaysApply: true
 ---
 
-# Cursor AI Rules for LibreNMS IronWare/FastIron Stack Discovery Project
+# Cursor AI Rules for LibreNMS IronWare/FastIron/ICX Stack Discovery Project
 
 ## Model Selection Strategy
 
@@ -32,6 +32,8 @@ alwaysApply: true
 
 **Goal**: Be meticulous, hunt subtle bugs, improve architecture and readability.
 
+Exception: If the task is **very small and isolated** (e.g. fixing one regex, tweaking a single function signature), use whichever model is already in context / has the latest file open to avoid unnecessary context switches.
+
 ## Project-Specific Guidelines
 
 ### Platform Support
@@ -49,10 +51,15 @@ Always consider both platforms when:
 
 #### PHP Code (LibreNMS Integration)
 ```php
-// Follow PSR-2 coding standards
+// Follow LibreNMS coding standards (PSR-2 compatible, moving toward PSR-12 where possible)
+// - Line length: prefer ≤ 120 chars (soft limit)
+// - Use strict_types=1 in new files when feasible
+// - Short array syntax [] everywhere
 // Use 4 spaces for indentation
 // Opening braces on same line for control structures
 // Opening braces on new line for functions/classes
+// Prefer safe wrappers: dbFetchCell(), dbFetchRow(), dbFetchRows() over raw dbInsert/dbUpdate when reading
+
 
 // Good example:
 if ($device['os'] == 'foundry' || $device['os'] == 'icx') {
@@ -376,7 +383,7 @@ This code is intended for LibreNMS upstream contribution. Ensure:
 
 ```
 /workspace/
-├── includes/              # LibreNMS integration code
+├── includes/             # LibreNMS integration code
 │   ├── discovery/os/     # OS detection (foundry.inc.php, icx.inc.php)
 │   ├── definitions/      # OS definitions (foundry.yaml, icx.yaml)
 │   └── polling/          # Polling modules (ironware-stack.inc.php)
