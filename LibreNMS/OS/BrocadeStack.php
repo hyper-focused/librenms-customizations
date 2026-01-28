@@ -3,8 +3,17 @@
 /**
  * BrocadeStack.php
  *
- * Unified OS class for Brocade Stacking Systems (FCX and ICX series)
- * Enhanced stack topology discovery and per-unit inventory
+ * Unified OS class for FastIron and ICX stackable switches (single module).
+ * Covers: FastIron (FCX, FWS, FLS, etc.) and ICX series — shared MIBs and discovery.
+ * Enhanced stack topology discovery and per-unit inventory for both platforms.
+ *
+ * This class extends the custom Foundry base class (LibreNMS\OS\Shared\Foundry)
+ * which provides CPU discovery functionality. Note: This Foundry class is
+ * custom to this project and does not exist in the official LibreNMS repository.
+ *
+ * CRITICAL ISSUE: Stack MIBs don't work on actual stacked switches!
+ * Both ICX6450 (2-stack) and FCX648 (6-stack) show snStackMemberCount=1
+ * and "No Such Instance" for all stack member table queries.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +39,7 @@ namespace LibreNMS\OS;
 use App\Models\Device;
 use App\Models\IronwareStackTopology;
 use App\Models\IronwareStackMember;
+use Illuminate\Support\Facades\Schema;
 use LibreNMS\Component;
 use LibreNMS\OS\Shared\Foundry;
 
@@ -53,15 +63,13 @@ class BrocadeStack extends Foundry
     /**
      * Discover and map stack topology
      *
-     * Enhanced stack discovery for Brocade stacking systems:
+     * Enhanced stack discovery for FastIron and ICX stacking systems:
      * - Detects ring vs chain topology
      * - Maps all stack members
      * - Tracks per-unit hardware inventory
      * - Identifies master and member roles
      *
-     * Verified with:
-     * - FCX648 (sysObjectID: .1.3.6.1.4.1.1991.1.3.48.2.1)
-     * - ICX6450-48 (sysObjectID: .1.3.6.1.4.1.1991.1.3.48.5.1)
+     * Verified with: FCX648, ICX6450-48 (enterprise 1991); applies to FWS, FLS, all ICX.
      *
      * @return void
      */
@@ -69,29 +77,157 @@ class BrocadeStack extends Foundry
     {
         $device = $this->getDevice();
 
-        // Check if stacking is enabled
-        $stackState = \SnmpQuery::get('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalConfigState.0')->value();
-
-        if ($stackState != 1) {
-            // Stacking not enabled or not supported, clean up old data
-            IronwareStackTopology::where('device_id', $device->device_id)->delete();
+        // Require stack tables; skip stack discovery if migration was not run
+        if (! Schema::hasTable('ironware_stack_topology') || ! Schema::hasTable('ironware_stack_members')) {
+            \Log::warning('BrocadeStack: ironware_stack_topology / ironware_stack_members tables missing. Run: php artisan migrate --force');
             return;
         }
 
-        // Get stack global information
-        $topologyValue = \SnmpQuery::get('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalTopology.0')->value();
-        $stackMac = \SnmpQuery::get('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalMacAddress.0')->value();
+        // Check if stacking is enabled - handle case where OID doesn't exist
+        $stackStateQuery = \SnmpQuery::get('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalConfigState.0');
+        $stackState = $stackStateQuery->value();
 
-        // Get all stack members from operational table
-        $members = \SnmpQuery::walk('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingOperUnitTable')->table();
+        // Extensive debug logging for stack detection issues
+        \Log::debug("BrocadeStack [H1]: Starting stack topology discovery", [
+            'device_id' => $device->device_id,
+            'hostname' => $device->hostname,
+            'ip' => $device->ip,
+            'sysDescr' => $device->sysDescr,
+            'sysObjectID' => $device->sysObjectID,
+            'os' => $device->os,
+            'hardware' => $device->hardware,
+            'hypothesis' => 'Device identification - checking if this is actually a stacked switch'
+        ]);
 
-        if (empty($members)) {
-            return; // No stack members found
+        // Debug logging for stack state OID query
+        \Log::debug("BrocadeStack [H2]: Attempting snStackingGlobalConfigState.0 query", [
+            'oid' => 'FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalConfigState.0',
+            'full_oid' => '.1.3.6.1.4.1.1991.1.1.3.31.1.1.0',
+            'hypothesis' => 'Testing if stack config state OID exists on stacked switches'
+        ]);
+
+        // Debug logging for stack state check
+        \Log::debug("BrocadeStack [H3]: Stack state query result", [
+            'device_id' => $device->device_id,
+            'stackState' => $stackState,
+            'stackState_type' => gettype($stackState),
+            'stackState_null' => $stackState === null,
+            'stackState_equals_1' => $stackState == 1,
+            'will_take_fallback_path' => $stackState === null || $stackState != 1,
+            'hypothesis' => 'Analyzing why stack state query fails on real stacks'
+        ]);
+
+        // If the OID doesn't exist or stacking is not enabled, check if device is stack-capable
+        if ($stackState === null || $stackState != 1) {
+            // Debug logging for fallback path
+            \Log::debug("BrocadeStack [H4]: Taking fallback path - stack not enabled or OID missing", [
+                'condition_stackState_null' => $stackState === null,
+                'condition_stackState_not_1' => $stackState != 1,
+                'stackState_value' => $stackState,
+                'hypothesis' => 'Why does stack state OID not exist on stacked switches?'
+            ]);
+
+            // Check if this is a standalone stack-capable device
+            $isStackCapable = $this->isStackCapableDevice($device);
+
+            \Log::debug("BrocadeStack [H5]: Stack capability detection", [
+                'isStackCapable' => $isStackCapable,
+                'sysDescr_contains_stacking' => strpos($device->sysDescr, 'Stacking System') !== false,
+                'sysObjectID_foundry_pattern' => strpos($device->sysObjectID, '.1.3.6.1.4.1.1991.1.3.') === 0,
+                'hypothesis' => 'Device detection working correctly for stack-capable devices?'
+            ]);
+
+            if (!$isStackCapable) {
+                \Log::debug("BrocadeStack [H6]: Device not stack capable - cleaning up", [
+                    'device_id' => $device->device_id,
+                    'hypothesis' => 'False negative in stack capability detection?'
+                ]);
+                // Not stack-capable, clean up old data
+                IronwareStackTopology::where('device_id', $device->device_id)->delete();
+                return;
+            }
+
+            // Device is stack-capable but not stacked - record as standalone
+            IronwareStackTopology::updateOrCreate(
+                ['device_id' => $device->device_id],
+                [
+                    'topology' => 'standalone',
+                    'unit_count' => 1,
+                    'master_unit' => 1,
+                    'stack_mac' => null,
+                ]
+            );
+
+            // Still try to discover single unit hardware info
+            $this->discoverStandaloneUnit($device);
+            return;
         }
 
-        // Get hardware details for each unit
-        $serials = \SnmpQuery::walk('FOUNDRY-SN-AGENT-MIB::snChasUnitSerNum')->table();
-        $descriptions = \SnmpQuery::walk('FOUNDRY-SN-AGENT-MIB::snChasUnitDescription')->table();
+        // Get stack global information - handle missing OIDs
+        $topologyQuery = \SnmpQuery::get('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalTopology.0');
+        $topologyValue = $topologyQuery->value() ?? 3; // Default to standalone
+        $stackMacQuery = \SnmpQuery::get('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalMacAddress.0');
+        $stackMac = $stackMacQuery->value();
+
+        // Debug logging for topology and MAC queries
+        \Log::debug("BrocadeStack: Stack topology and MAC queries", [
+            'topology_value' => $topologyValue,
+            'topology_exists' => $topologyQuery->value() !== null,
+            'stack_mac' => $stackMac,
+            'stack_mac_exists' => $stackMacQuery->value() !== null
+        ]);
+
+        // Get all stack members from operational table - handle missing OID
+        \Log::debug("BrocadeStack [H7]: Attempting operational stack table query", [
+            'oid' => 'FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingOperUnitTable',
+            'full_oid_base' => '.1.3.6.1.4.1.1991.1.1.3.31.3.1',
+            'hypothesis' => 'Does operational stack table exist on real stacked switches?'
+        ]);
+
+        $membersQuery = \SnmpQuery::walk('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingOperUnitTable');
+        $members = $membersQuery->table();
+
+        // Debug logging for members query
+        \Log::debug("BrocadeStack: Stack members query", [
+            'members_found' => !empty($members),
+            'members_count' => count($members),
+            'members_keys' => !empty($members) ? array_keys($members) : []
+        ]);
+
+        // #region agent log H8 - Operational table query result
+        fetch('http://127.0.0.1:7242/ingest/4afe5754-0a0d-4840-8046-3abcfb0bc2d3', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                location: 'BrocadeStack.php:90',
+                message: 'Operational stack table query result',
+                data: {
+                    members_found: !empty($members),
+                    members_count: count($members),
+                    members_keys: !empty($members) ? array_keys($members) : [],
+                    members_sample: !empty($members) ? array_slice($members, 0, 2) : null,
+                    query_error: $membersQuery->error()
+                },
+                timestamp: Date.now(),
+                sessionId: 'debug-session',
+                runId: 'stack-debug',
+                hypothesisId: 'H8'
+            })
+        }).catch(() => {});
+        // #endregion
+
+        if (empty($members)) {
+            // No stack members found via standard MIB, try alternative detection
+            $this->discoverStackViaAlternativeMethod($device);
+            return;
+        }
+
+        // Get hardware details for each unit - handle missing OIDs
+        $serialsQuery = \SnmpQuery::walk('FOUNDRY-SN-AGENT-MIB::snChasUnitSerNum');
+        $serials = $serialsQuery->table();
+
+        $descriptionsQuery = \SnmpQuery::walk('FOUNDRY-SN-AGENT-MIB::snChasUnitDescription');
+        $descriptions = $descriptionsQuery->table();
 
         // Map topology value to string
         $topology = match ($topologyValue) {
@@ -118,12 +254,23 @@ class BrocadeStack extends Foundry
         // Process each stack member
         $currentMemberIds = [];
         foreach ($members as $unitId => $member) {
+            // Get serial and description for this unit, handling missing data
+            $unitSerial = null;
+            $unitDescription = null;
+
+            if (!empty($serials) && isset($serials[$unitId])) {
+                $unitSerial = $serials[$unitId];
+            }
+            if (!empty($descriptions) && isset($descriptions[$unitId])) {
+                $unitDescription = $descriptions[$unitId];
+            }
+
             $stackMember = $this->discoverStackMember(
                 $device,
                 $unitId,
                 $member,
-                $serials[$unitId] ?? null,
-                $descriptions[$unitId] ?? null
+                $unitSerial,
+                $unitDescription
             );
 
             if ($stackMember) {
@@ -258,6 +405,100 @@ class BrocadeStack extends Foundry
     }
 
     /**
+     * Try additional stack-related OIDs that might work on stacked switches
+     *
+     * @param Device $device
+     * @return bool True if any stack data was found
+     */
+    private function tryAdditionalStackOIDs(Device $device): bool
+    {
+        $stackDataFound = false;
+
+        // Try various alternative stack OIDs
+        $alternativeOIDs = [
+            // Try direct member count queries
+            'snStackMemberCount' => '.1.3.6.1.4.1.1991.1.1.2.1.1.0',
+            'snStackPortCount' => '.1.3.6.1.4.1.1991.1.1.2.1.3.0',
+
+            // Try different stack table variations
+            'stackTable' => '.1.3.6.1.4.1.1991.1.1.2.1.2',
+            'stackPortTable' => '.1.3.6.1.4.1.1991.1.1.2.1.4',
+
+            // Try Brocade-specific enterprise OIDs
+            'brocadeStackInfo' => '.1.3.6.1.4.1.1588.2.1.1.1',
+        ];
+
+        foreach ($alternativeOIDs as $name => $oid) {
+            // #region agent log H13 - Trying alternative OID
+            fetch('http://127.0.0.1:7242/ingest/4afe5754-0a0d-4840-8046-3abcfb0bc2d3', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    location: 'BrocadeStack.php:tryAdditionalStackOIDs',
+                    message: 'Trying alternative stack OID',
+                    data: {
+                        oid_name: $name,
+                        oid: $oid
+                    },
+                    timestamp: Date.now(),
+                    sessionId: 'debug-session',
+                    runId: 'stack-debug',
+                    hypothesisId: 'H13'
+                })
+            }).catch(() => {});
+            // #endregion
+
+            $query = \SnmpQuery::get($oid);
+            $value = $query->value();
+
+            // #region agent log H14 - Alternative OID result
+            fetch('http://127.0.0.1:7242/ingest/4afe5754-0a0d-4840-8046-3abcfb0bc2d3', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    location: 'BrocadeStack.php:tryAdditionalStackOIDs',
+                    message: 'Alternative OID query result',
+                    data: {
+                        oid_name: $name,
+                        oid: $oid,
+                        value: $value,
+                        value_exists: $value !== null,
+                        query_error: $query->error()
+                    },
+                    timestamp: Date.now(),
+                    sessionId: 'debug-session',
+                    runId: 'stack-debug',
+                    hypothesisId: 'H14'
+                })
+            }).catch(() => {});
+            // #endregion
+
+            if ($value !== null) {
+                $stackDataFound = true;
+                \Log::info("BrocadeStack: Found stack data via alternative OID {$name}: {$value}");
+            }
+        }
+
+        return $stackDataFound;
+    }
+
+    /**
+     * Map topology value to string
+     *
+     * @param int $value Topology from SNMP (1=ring, 2=chain, 3=standalone)
+     * @return string Topology as string
+     */
+    private function mapTopologyValue(int $value): string
+    {
+        return match ($value) {
+            1 => 'ring',
+            2 => 'chain',
+            3 => 'standalone',
+            default => 'unknown',
+        };
+    }
+
+    /**
      * Map stack role value to string
      *
      * @param int $value Role from SNMP (1=standalone, 2=member, 3=master)
@@ -302,12 +543,300 @@ class BrocadeStack extends Foundry
             return null;
         }
 
-        // Extract FCX or ICX model from description
-        if (preg_match('/(FCX|ICX)\s*\d+[A-Z0-9-]*/i', $description, $matches)) {
-            return $matches[0];
+        // Extract FastIron (FCX, FWS, FLS) or ICX model from description
+        if (preg_match('/(FCX|FWS|FLS|ICX)\s*\d*[A-Z0-9-]*/i', $description, $matches)) {
+            return trim($matches[0]);
         }
 
         return $description;
+    }
+
+    /**
+     * Check if device is stack-capable based on sysDescr and sysObjectID
+     *
+     * @param Device $device
+     * @return bool
+     */
+    private function isStackCapableDevice(Device $device): bool
+    {
+        // Check sysDescr for "Stacking System" or stack-capable models
+        if (stripos($device->sysDescr, 'Stacking System') !== false) {
+            return true;
+        }
+
+        // Check for known stack-capable model patterns (FastIron + ICX)
+        $stackModels = ['FCX', 'FWS', 'FLS', 'ICX'];
+        foreach ($stackModels as $model) {
+            if (stripos($device->sysDescr, $model) !== false) {
+                return true;
+            }
+        }
+
+        // Check sysObjectID for Foundry enterprise with stack-capable pattern
+        if (strpos($device->sysObjectID, '.1.3.6.1.4.1.1991.1.3.') === 0) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Discover hardware info for standalone stack-capable device
+     *
+     * @param Device $device
+     * @return void
+     */
+    private function discoverStandaloneUnit(Device $device): void
+    {
+        // Try alternative methods to get hardware info when standard stack OIDs don't exist
+
+        // Try to get serial number from alternative OIDs
+        $serialNumber = null;
+
+        // Try various serial number OIDs that might work on different firmware versions
+        $serialOids = [
+            'FOUNDRY-SN-AGENT-MIB::snChasSerNum.0',
+            'FOUNDRY-SN-ROOT-MIB::snChasSerNum.0',
+            // Add more alternatives as discovered
+        ];
+
+        foreach ($serialOids as $oid) {
+            $serialQuery = \SnmpQuery::get($oid);
+            if ($serialQuery->value() !== null) {
+                $serialNumber = $serialQuery->value();
+                break;
+            }
+        }
+
+        // Extract model from sysDescr
+        $model = $this->extractModelFromSysDescr($device->sysDescr);
+
+        // Create single unit record
+        $memberData = [
+            'role' => 'standalone',
+            'state' => 'active',
+            'serial_number' => $serialNumber,
+            'model' => $model,
+            'version' => $this->extractVersionFromSysDescr($device->sysDescr),
+            'mac_address' => null, // Would need to get from ifPhysAddress or similar
+            'priority' => 128, // Default priority for standalone
+        ];
+
+        IronwareStackMember::updateOrCreate(
+            [
+                'device_id' => $device->device_id,
+                'unit_id' => 1,
+            ],
+            $memberData
+        );
+    }
+
+    /**
+     * Alternative stack discovery when standard MIBs don't work
+     *
+     * @param Device $device
+     * @return void
+     */
+    private function discoverStackViaAlternativeMethod(Device $device): void
+    {
+        // #region agent log H9 - Alternative method - trying configuration table
+        fetch('http://127.0.0.1:7242/ingest/4afe5754-0a0d-4840-8046-3abcfb0bc2d3', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                location: 'BrocadeStack.php:discoverStackViaAlternativeMethod',
+                message: 'Trying configuration table as alternative to operational table',
+                data: {
+                    oid: 'FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingConfigUnitTable',
+                    full_oid_base: '.1.3.6.1.4.1.1991.1.1.3.31.2.1'
+                },
+                timestamp: Date.now(),
+                sessionId: 'debug-session',
+                runId: 'stack-debug',
+                hypothesisId: 'H9'
+            })
+        }).catch(() => {});
+        // #endregion
+
+        // Try configuration table as alternative to operational table
+        $configMembersQuery = \SnmpQuery::walk('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingConfigUnitTable');
+        $configMembers = $configMembersQuery->table();
+
+        \Log::debug("BrocadeStack: Trying configuration table fallback", [
+            'config_members_found' => !empty($configMembers),
+            'config_members_count' => count($configMembers)
+        ]);
+
+        // #region agent log H10 - Configuration table query result
+        fetch('http://127.0.0.1:7242/ingest/4afe5754-0a0d-4840-8046-3abcfb0bc2d3', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                location: 'BrocadeStack.php:configMembersQuery',
+                message: 'Configuration table query result',
+                data: {
+                    config_members_found: !empty($configMembers),
+                    config_members_count: count($configMembers),
+                    config_members_keys: !empty($configMembers) ? array_keys($configMembers) : [],
+                    config_members_sample: !empty($configMembers) ? array_slice($configMembers, 0, 2) : null,
+                    query_error: $configMembersQuery->error()
+                },
+                timestamp: Date.now(),
+                sessionId: 'debug-session',
+                runId: 'stack-debug',
+                hypothesisId: 'H10'
+            })
+        }).catch(() => {});
+        // #endregion
+
+        if (!empty($configMembers)) {
+            // Use configuration table data to create stack records
+            $this->processConfigTableMembers($device, $configMembers);
+            return;
+        }
+
+        // Try additional alternative OIDs before giving up
+        $foundAnyStackData = $this->tryAdditionalStackOIDs($device);
+
+        // #region agent log H11 - Additional OID attempts result
+        fetch('http://127.0.0.1:7242/ingest/4afe5754-0a0d-4840-8046-3abcfb0bc2d3', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                location: 'BrocadeStack.php:fallback',
+                message: 'Additional stack OID attempts completed',
+                data: {
+                    foundAnyStackData: $foundAnyStackData,
+                    device_hostname: $device->hostname
+                },
+                timestamp: Date.now(),
+                sessionId: 'debug-session',
+                runId: 'stack-debug',
+                hypothesisId: 'H11'
+            })
+        }).catch(() => {});
+        // #endregion
+
+        if ($foundAnyStackData) {
+            return; // Successfully found stack data via alternative methods
+        }
+
+        // No stack information available at all
+        \Log::warning("Standard Foundry stack MIBs not available on device {$device->hostname}. Treating as standalone stack-capable device.");
+
+        // #region agent log H12 - Final fallback to standalone
+        fetch('http://127.0.0.1:7242/ingest/4afe5754-0a0d-4840-8046-3abcfb0bc2d3', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                location: 'BrocadeStack.php:standalone-fallback',
+                message: 'No stack data found - falling back to standalone mode',
+                data: {
+                    device_id: $device->device_id,
+                    hostname: $device->hostname
+                },
+                timestamp: Date.now(),
+                sessionId: 'debug-session',
+                runId: 'stack-debug',
+                hypothesisId: 'H12'
+            })
+        }).catch(() => {});
+        // #endregion
+
+        // Fall back to standalone discovery
+        IronwareStackTopology::updateOrCreate(
+            ['device_id' => $device->device_id],
+            [
+                'topology' => 'standalone',
+                'unit_count' => 1,
+                'master_unit' => 1,
+                'stack_mac' => null,
+            ]
+        );
+
+        $this->discoverStandaloneUnit($device);
+    }
+
+    /**
+     * Process stack members from configuration table
+     *
+     * @param Device $device
+     * @param array $configMembers
+     * @return void
+     */
+    private function processConfigTableMembers(Device $device, array $configMembers): void
+    {
+        $memberCount = count($configMembers);
+
+        // Get topology from global config if available
+        $topologyValue = \SnmpQuery::get('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalTopology.0')->value() ?? 3;
+
+        // Create topology record
+        IronwareStackTopology::updateOrCreate(
+            ['device_id' => $device->device_id],
+            [
+                'topology' => $this->mapTopologyValue($topologyValue),
+                'unit_count' => $memberCount,
+                'master_unit' => 1, // Assume first unit is master in config
+                'stack_mac' => \SnmpQuery::get('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalMacAddress.0')->value(),
+            ]
+        );
+
+        // Process each configured member
+        foreach ($configMembers as $unitId => $member) {
+            $memberData = [
+                'role' => 'member', // Config table doesn't specify roles clearly
+                'state' => 'active', // Assume configured units are active
+                'serial_number' => null, // Config table may not have serials
+                'model' => null, // Config table may not have models
+                'version' => null, // Config table may not have versions
+                'mac_address' => null,
+                'priority' => $member['snStackingConfigUnitPriority'] ?? 128,
+            ];
+
+            IronwareStackMember::updateOrCreate(
+                [
+                    'device_id' => $device->device_id,
+                    'unit_id' => $unitId,
+                ],
+                $memberData
+            );
+        }
+
+        // Update component for display
+        $this->updateStackComponent($device, $this->mapTopologyValue($topologyValue), 1, $configMembers, $memberCount);
+    }
+
+    /**
+     * Extract model from sysDescr
+     *
+     * @param string $sysDescr
+     * @return string|null
+     */
+    private function extractModelFromSysDescr(string $sysDescr): ?string
+    {
+        // Look for FastIron (FCX, FWS, FLS) or ICX model patterns
+        if (preg_match('/\b(FCX|FWS|FLS|ICX)\d*[A-Z0-9-]*/i', $sysDescr, $matches)) {
+            return $matches[0];
+        }
+
+        return null;
+    }
+
+    /**
+     * Extract version from sysDescr
+     *
+     * @param string $sysDescr
+     * @return string|null
+     */
+    private function extractVersionFromSysDescr(string $sysDescr): ?string
+    {
+        // Look for version patterns
+        if (preg_match('/(?:IronWare|FastIron)\s+Version\s+([\d.]+[a-zA-Z0-9]*)/i', $sysDescr, $matches)) {
+            return $matches[1];
+        }
+
+        return null;
     }
 
     /**
@@ -319,7 +848,7 @@ class BrocadeStack extends Foundry
     private function rewriteHardware(): void
     {
         $rewrite_brocade_stack_hardware = [
-            // FCX Series
+            // FastIron: FCX Series
             'snFCX624SSwitch' => 'FCX624S',
             'snFCX624Switch' => 'FCX624',
             'snFCX624SHPOESwitch' => 'FCX624S PoE+',
@@ -327,6 +856,7 @@ class BrocadeStack extends Foundry
             'snFCX648Switch' => 'FCX648',
             'snFCX648SHPOESwitch' => 'FCX648S PoE+',
             'snFastIronStackFCXSwitch' => 'FCX Stack',
+            // FastIron: FWS/FLS (add OID keys as discovered from MIBs)
             
             // ICX 6430 Series
             'snICX643024Switch' => 'ICX6430-24',

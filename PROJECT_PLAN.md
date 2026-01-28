@@ -1,8 +1,10 @@
-# LibreNMS Foundry/Brocade/Ruckus IronWare Stacked Discovery Project Plan
+# LibreNMS FastIron & ICX Stack Discovery — Project Plan
+
+**Note:** This project uses a **single unified OS** (`brocade-stack`) for both FastIron (FCX, FWS, FLS, etc.) and ICX. One codebase, one set of definitions. See [docs/UNIFIED_PLATFORM_SCOPE.md](docs/UNIFIED_PLATFORM_SCOPE.md).
 
 ## Project Overview
 
-This project aims to improve OS discovery and monitoring capabilities for IronWare/FastIron-based switches in LibreNMS, with special focus on stacked switch configurations across multiple product families.
+This project improves OS discovery and monitoring for IronWare/FastIron-based stackable switches in LibreNMS, with a **unified module** covering FastIron and ICX (no separate OS per platform).
 
 ## Background
 

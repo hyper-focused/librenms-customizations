@@ -1,6 +1,6 @@
 # Brocade Stack OS Discovery
-# Unified discovery for all Brocade stacked switches (FCX/ICX)
-# Includes monitoring for memory, CPU, sensors, PoE, and stack-specific features
+# Single unified discovery: FastIron (FCX, FWS, FLS, etc.) + ICX stackable switches
+# Shared MIBs and logic for both platforms; stack-aware per-unit discovery
 
 mib: FOUNDRY-SN-AGENT-MIB:FOUNDRY-SN-SWITCH-GROUP-MIB:FOUNDRY-SN-STACKING-MIB
 modules:
@@ -29,11 +29,11 @@ modules:
         # Extract version from sysDescr
         # Matches: "IronWare Version 08.0.30uT7f1" or "FastIron Version 08.0.95"
         sysDescr_regex: '/(?:IronWare|FastIron) Version (?<version>[\d.]+[a-zA-Z0-9]*)/i'
-        # Extract hardware from sysDescr
-        # Matches: "FCX648" or "ICX6450-48" or "ICX7150-48P"
+        # Extract hardware from sysDescr (FastIron + ICX model names)
+        # Matches: FCX648, FWS, FLS, ICX6450-48, ICX7150-48P, etc.
         hardware: 
             - FOUNDRY-SN-AGENT-MIB::snChasUnitDescription.1
-        hardware_regex: '/(?:FCX|ICX)\d+[A-Z0-9-]*/i'
+        hardware_regex: '/(?:FCX|FWS|FLS|ICX)\d*[A-Z0-9-]*/i'
         serial: FOUNDRY-SN-AGENT-MIB::snChasSerNum.0
         version: FOUNDRY-SN-AGENT-MIB::snAgImgVer.0
     
@@ -294,22 +294,89 @@ modules:
                         - { value: 2, descr: up, graph: 1, generic: 0 }
                         - { value: 3, descr: down, graph: 0, generic: 2 }
 
+# Layer 2 switch with light L3 (static routes, EIGRP, RIP). Only modules useful for
+# monitoring this role are enabled; all others (Cisco-specific, server/desktop, etc.)
+# are explicitly disabled.
 discovery_modules:
+    # Enabled: L2 switch + light L3
+    arp-table: true
+    discovery-protocols: true
+    entity-physical: true
+    fdb-table: true
+    ipv4-addresses: true
+    ipv6-addresses: true
+    lldp: true
     os: true
     ports: true
-    entity-physical: true
+    ports-stack: true
+    route: true
     sensors: true
     storage: true
     stp: true
-    lldp: true
     vlans: true
+    # Disabled: routing protocols (BGP, OSPF), Cisco-specific, server/desktop, other
+    bgp: false
+    cisco-cef: false
+    cisco-mac-accounting: false
+    cisco-otv: false
+    cisco-pw: false
+    cisco-vrf-lite: false
+    discovery-arp: false
+    entity-state: false
+    hr-device: false
+    mempools: false
+    ospf: false
+    ospfv3: false
+    processors: false
+    slas: false
+    vrf: false
 
 poller_modules:
+    # Enabled: L2 switch + light L3
+    availability: true
+    entity-physical: true
+    lldp: true
+    ntp: true
     os: true
     ports: true
-    entity-physical: true
     sensors: true
     stp: true
-    lldp: true
+    storage: true
+    # Disabled: Cisco-specific, server/desktop, routing protocols, load balancers, etc.
+    applications: false
+    aruba-controller: false
+    bgp-peers: false
+    cipsec-tunnels: false
+    cisco-ace-loadbalancer: false
+    cisco-ace-serverfarms: false
+    cisco-cbqos: false
+    cisco-cef: false
+    cisco-ipsec-flow-monitor: false
+    cisco-mac-accounting: false
+    cisco-otv: false
+    cisco-remote-access-monitor: false
+    cisco-vpdn: false
+    entity-state: false
+    hr-mib: false
+    ipmi: false
+    ipSystemStats: false
+    junose-atm-vp: false
+    loadbalancers: false
+    mef: false
+    mempools: false
+    nac: false
+    netstats: false
+    ospf: false
+    ospfv3: false
+    printer-supplies: false
+    processors: false
+    services: false
+    slas: false
+    ucd-diskio: false
+    ucd-mib: false
+    unix-agent: false
+    vminfo: false
+    wireless: false
+    netscaler-vsvr: false
 
 stackable: true

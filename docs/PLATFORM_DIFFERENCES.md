@@ -1,6 +1,6 @@
-# Platform Differences: Foundry FCX vs Brocade/Ruckus ICX
+# Platform Differences: FastIron (FCX) vs ICX
 
-This document details the differences between Foundry FCX and Brocade/Ruckus ICX platforms to guide implementation decisions.
+Reference for the unified FastIron + ICX module. Describes differences between FCX and ICX platforms (both handled by the same OS and codebase).
 
 ## Overview
 
