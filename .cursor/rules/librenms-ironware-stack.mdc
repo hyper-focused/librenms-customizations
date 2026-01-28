@@ -1,0 +1,405 @@
+---
+description: Cursor AI Rules for LibreNMS IronWare/FastIron Stack Discovery Project
+alwaysApply: true
+---
+
+# Cursor AI Rules for LibreNMS IronWare/FastIron Stack Discovery Project
+
+## Model Selection Strategy
+
+### Use grok-code-fast-1 for:
+- **Initial implementation** of new features
+- **Heavy code generation** tasks (creating new files, boilerplate)
+- **Rapid prototyping** of discovery modules, polling logic
+- **Bulk code creation** (multiple test files, example configs)
+- **Speed-critical tasks** where iteration speed matters more than perfection
+- **First drafts** of documentation or code
+- **Scaffolding** new modules or structures
+
+**Goal**: Generate rough but complete drafts quickly. Don't overthink. Get working code fast.
+
+### Use Claude (Sonnet) for:
+- **Code review** and quality assurance
+- **Merging** different implementations or resolving conflicts
+- **Comparing** agent outputs or different approaches
+- **Architecture decisions** and design patterns
+- **Debugging** complex issues or subtle bugs
+- **Security review** of SNMP handling and database operations
+- **Performance optimization** of discovery/polling logic
+- **Final polish** before committing to upstream LibreNMS
+- **Documentation refinement** and technical writing
+- **Edge case handling** and error scenarios
+
+**Goal**: Be meticulous, hunt subtle bugs, improve architecture and readability.
+
+## Project-Specific Guidelines
+
+### Platform Support
+This project supports multiple switch platforms with shared heritage:
+- **Foundry FCX** series (Enterprise OID: 1991, IronWare OS)
+- **Brocade/Ruckus ICX** series (Enterprise OID: 1588, FastIron OS)
+
+Always consider both platforms when:
+- Writing OS detection logic
+- Designing database schemas
+- Creating SNMP queries
+- Writing documentation
+
+### Code Standards
+
+#### PHP Code (LibreNMS Integration)
+```php
+// Follow PSR-2 coding standards
+// Use 4 spaces for indentation
+// Opening braces on same line for control structures
+// Opening braces on new line for functions/classes
+
+// Good example:
+if ($device['os'] == 'foundry' || $device['os'] == 'icx') {
+    $stack_data = snmpwalk_cache_oid($device, 'snStackingOperUnitTable', [], 
+                                     'FOUNDRY-SN-SWITCH-GROUP-MIB');
+    
+    foreach ($stack_data as $unit_index => $unit) {
+        // Process stack member
+        d_echo("Processing unit $unit_index\n");
+    }
+}
+
+// Use LibreNMS helper functions
+// - d_echo() for debug output
+// - c_echo() for critical messages
+// - dbInsert(), dbUpdate(), dbDelete() for database
+// - snmpwalk_cache_oid() for SNMP operations
+```
+
+#### Database Operations
+```php
+// Always use prepared statements (automatic with LibreNMS DB layer)
+// Use descriptive table/column names
+// Follow LibreNMS naming conventions
+
+// Good:
+$stack_id = dbInsert([
+    'device_id' => $device['device_id'],
+    'platform' => $platform,
+    'stack_count' => $unit_count,
+    'last_discovered' => ['NOW()']
+], 'ironware_stacks');
+
+// Use transactions for multi-table operations when needed
+```
+
+#### SNMP Queries
+```php
+// Always handle SNMP failures gracefully
+$data = snmp_get($device, $oid, '-Oqv', $mib);
+if ($data === false) {
+    d_echo("Failed to fetch $oid, skipping\n");
+    return false;
+}
+
+// Use bulk operations for efficiency
+$stack_units = snmpwalk_cache_oid($device, 'snStackingOperUnitTable', [], 
+                                  'FOUNDRY-SN-SWITCH-GROUP-MIB');
+
+// Cache results to avoid repeated queries
+```
+
+#### Error Handling
+```php
+// Be defensive - always validate SNMP data
+if (!isset($unit_data['snStackingOperUnitRole'])) {
+    d_echo("Missing unit role data\n");
+    continue;
+}
+
+// Log errors appropriately
+try {
+    dbInsert($data, $table);
+} catch (\Exception $e) {
+    c_echo("Database error: " . $e->getMessage() . "\n");
+}
+```
+
+### Testing Requirements
+
+#### Always Test Both Platforms
+When implementing features, consider:
+1. **FCX behavior** (Foundry enterprise OID, IronWare OS)
+2. **ICX behavior** (Brocade enterprise OID, FastIron OS)
+3. **Backward compatibility** (ICX using Foundry OIDs)
+
+#### Test Data Scenarios
+```php
+// Create test cases for:
+// - Standalone switches (FCX and ICX)
+// - Small stacks (2 units)
+// - Large stacks (8 units for FCX, 12 for ICX)
+// - Degraded stacks (failed members)
+// - Different firmware versions
+// - Both enterprise OIDs (1991 and 1588)
+```
+
+#### Mock SNMP Data Format
+```json
+{
+  "device": {
+    "hostname": "test-device",
+    "os": "icx",
+    "sysObjectID": ".1.3.6.1.4.1.1588.2.1.1.1.3.31"
+  },
+  "snmp": {
+    ".1.3.6.1.2.1.1.1.0": "Ruckus ICX 7150-48P...",
+    ".1.3.6.1.4.1.1991.1.1.3.31.3.1.2.1": "3"
+  }
+}
+```
+
+### SNMP OID Reference
+
+#### Always Check Both Enterprise OIDs
+```php
+// FCX uses: .1.3.6.1.4.1.1991.*
+// ICX uses: .1.3.6.1.4.1.1588.* (primary)
+// ICX also responds to: .1.3.6.1.4.1.1991.* (compatibility)
+
+// Detection strategy:
+// 1. Try Brocade OID (.1588) first for ICX
+// 2. Fall back to Foundry OID (.1991)
+// 3. Use sysDescr patterns as secondary validation
+```
+
+#### Common Stack OIDs (Both Platforms)
+```
+snStackingGlobalTopology.0     .1.3.6.1.4.1.1991.1.1.3.31.1.2.0
+snStackingOperUnitRole         .1.3.6.1.4.1.1991.1.1.3.31.3.1.2
+snStackingOperUnitState        .1.3.6.1.4.1.1991.1.1.3.31.3.1.3
+snStackingOperUnitMac          .1.3.6.1.4.1.1991.1.1.3.31.3.1.4
+snChasUnitSerNum               .1.3.6.1.4.1.1991.1.1.1.4.1.1.2
+```
+
+### Documentation Standards
+
+#### Code Comments
+```php
+/**
+ * Discover IronWare/FastIron stack configuration
+ * 
+ * Supports both Foundry FCX and Brocade/Ruckus ICX platforms
+ * 
+ * @param array $device Device array from LibreNMS
+ * @return bool Success status
+ */
+function discover_ironware_stack($device)
+{
+    // Platform detection
+    $platform = detect_platform($device); // 'fcx' or 'icx'
+    
+    // ... implementation
+}
+```
+
+#### Documentation Files
+- Use Markdown for all documentation
+- Include code examples with syntax highlighting
+- Provide SNMP query examples for testing
+- Document platform differences clearly
+- Include troubleshooting sections
+
+### Performance Considerations
+
+#### Discovery Optimization
+```php
+// Discovery runs every 6 hours by default
+// Keep queries efficient:
+
+// Good - single bulk walk
+$units = snmpwalk_cache_oid($device, 'snStackingOperUnitTable', [], $mib);
+
+// Bad - multiple individual queries
+foreach ($unit_ids as $id) {
+    $unit = snmp_get($device, "snStackingOperUnitRole.$id", ...);
+}
+```
+
+#### Polling Optimization
+```php
+// Polling runs every 5 minutes
+// Only poll what changes frequently:
+
+// Poll: Stack member status, stack port status
+// Don't poll: Serial numbers, model info (use discovery)
+```
+
+#### Database Indexing
+```sql
+-- Always add indexes on foreign keys
+-- Index frequently queried columns
+ALTER TABLE ironware_stack_members 
+ADD INDEX idx_stack_id (stack_id),
+ADD INDEX idx_unit_role (unit_role);
+```
+
+### Platform Detection Pattern
+
+```php
+// Unified detection approach
+function detect_platform($device) {
+    // Check sysObjectID first
+    if (preg_match('/^\.1\.3\.6\.1\.4\.1\.1588\.2\.1\.1\.1\.3\./', 
+                   $device['sysObjectID'])) {
+        return 'icx';  // Brocade/Ruckus ICX
+    }
+    
+    if (preg_match('/^\.1\.3\.6\.1\.4\.1\.1991\.1\.3\.(51|52)\./', 
+                   $device['sysObjectID'])) {
+        return 'fcx';  // Foundry FCX
+    }
+    
+    // Check sysDescr as fallback
+    if (preg_match('/(Brocade|Ruckus|ICX\d{4})/i', $device['sysDescr'])) {
+        return 'icx';
+    }
+    
+    if (preg_match('/(Foundry|FCX\d{3})/i', $device['sysDescr'])) {
+        return 'fcx';
+    }
+    
+    return 'unknown';
+}
+```
+
+### Version Detection Pattern
+
+```php
+// Handle both IronWare and FastIron version formats
+function extract_version($sysDescr) {
+    // Match: "IronWare Version 08.0.30" or "FastIron Version 08.0.95"
+    if (preg_match('/(IronWare|FastIron)\s+Version\s+([\d.]+[a-z]?)/i', 
+                   $sysDescr, $matches)) {
+        return [
+            'os_type' => strtolower($matches[1]),  // 'ironware' or 'fastiron'
+            'version' => $matches[2]                // '08.0.30' or '08.0.95b'
+        ];
+    }
+    
+    return false;
+}
+```
+
+### Model Extraction Pattern
+
+```php
+// Extract model from sysDescr
+function extract_model($sysDescr) {
+    // FCX pattern: FCX624, FCX648
+    if (preg_match('/FCX(\d{3}[A-Z]?)/i', $sysDescr, $matches)) {
+        return 'FCX' . $matches[1];
+    }
+    
+    // ICX pattern: ICX6450-24, ICX7150-48P, ICX7750-48F
+    if (preg_match('/ICX(\d{4})(?:-(\d{2}[A-Z]?))?/i', $sysDescr, $matches)) {
+        $model = 'ICX' . $matches[1];
+        if (isset($matches[2])) {
+            $model .= '-' . $matches[2];
+        }
+        return $model;
+    }
+    
+    return 'unknown';
+}
+```
+
+## Common Pitfalls to Avoid
+
+### ❌ Don't Do This:
+```php
+// Assuming FCX-only behavior
+if ($device['os'] == 'foundry') { ... }
+
+// Hardcoding enterprise OID
+$oid = '.1.3.6.1.4.1.1991.' . $suffix;
+
+// Not handling SNMP failures
+$data = snmp_get($device, $oid);
+foreach ($data as $item) { ... }  // Fails if $data is false
+
+// Using raw SQL queries
+$result = mysql_query("SELECT * FROM foundry_stacks WHERE device_id = $id");
+```
+
+### ✅ Do This Instead:
+```php
+// Check for both platforms
+if (in_array($device['os'], ['foundry', 'icx'])) { ... }
+
+// Use platform detection
+$platform = detect_platform($device);
+$enterprise_oid = ($platform == 'icx') ? '1588' : '1991';
+
+// Always validate SNMP data
+$data = snmp_get($device, $oid);
+if ($data === false || empty($data)) {
+    d_echo("No data returned\n");
+    return false;
+}
+
+// Use LibreNMS database layer
+$result = dbFetchRows('SELECT * FROM ironware_stacks WHERE device_id = ?', [$id]);
+```
+
+## Pre-Commit Checklist
+
+Before committing code:
+- [ ] Code follows PSR-2 standards
+- [ ] Tested with both FCX and ICX platforms
+- [ ] SNMP failures handled gracefully
+- [ ] Database operations use LibreNMS functions
+- [ ] Logging uses d_echo() / c_echo()
+- [ ] Comments explain platform-specific behavior
+- [ ] Edge cases considered (failed units, degraded stacks)
+- [ ] No hardcoded enterprise OIDs or models
+- [ ] Tests written or updated
+- [ ] Documentation updated if needed
+
+## Upstream Contribution Notes
+
+This code is intended for LibreNMS upstream contribution. Ensure:
+- Follows LibreNMS coding standards strictly
+- No external dependencies added without approval
+- Performance optimized (discovery/polling efficiency)
+- Backward compatible with existing LibreNMS installations
+- Well documented for community use
+- Clean commit messages following LibreNMS conventions
+
+## File Organization
+
+```
+/workspace/
+├── includes/              # LibreNMS integration code
+│   ├── discovery/os/     # OS detection (foundry.inc.php, icx.inc.php)
+│   ├── definitions/      # OS definitions (foundry.yaml, icx.yaml)
+│   └── polling/          # Polling modules (ironware-stack.inc.php)
+├── docs/                 # Comprehensive documentation
+├── tests/                # Test cases and test data
+├── examples/             # Usage examples and configs
+├── mibs/                 # MIB files (not in repo, document how to obtain)
+└── sql-schema/           # Database migrations
+```
+
+## Summary for AI Assistants
+
+**Fast iteration (grok-code-fast-1)**:
+- Generate complete working code quickly
+- Don't overthink architecture initially
+- Get testable implementations fast
+- Create comprehensive boilerplate
+
+**Quality review (Claude)**:
+- Scrutinize for bugs and edge cases
+- Optimize architecture and patterns
+- Ensure platform compatibility (FCX + ICX)
+- Polish for production readiness
+- Review before upstream submission
+
+**Always remember**: This project supports TWO distinct but related platforms (Foundry FCX and Brocade/Ruckus ICX). Every design decision should consider both.
