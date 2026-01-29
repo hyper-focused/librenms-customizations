@@ -60,7 +60,6 @@ modules:
                     entPhysicalIndex: '{{ $index }}'
                     entPhysicalIndex_measured: 'ports'
                     group: transceiver
-                    skip_values: 0
                 -
                     oid: snIfOpticalMonitoringInfoTable
                     value: snIfOpticalMonitoringTxPower
@@ -70,7 +69,6 @@ modules:
                     entPhysicalIndex: '{{ $index }}'
                     entPhysicalIndex_measured: 'ports'
                     group: transceiver
-                    skip_values: 0
 
         # Current monitoring (optical transceivers, interface-based/stack-aware)
         # Modern format: displays in Ports → Transceivers tab
@@ -86,7 +84,6 @@ modules:
                     entPhysicalIndex: '{{ $index }}'
                     entPhysicalIndex_measured: 'ports'
                     group: transceiver
-                    skip_values: 0
 
         # PoE disabled by default: avoids 0-value PoE sensors on device overview for non-PoE devices.
         # Re-add via conditional PHP (probe snAgentPoeGblPowerCapacityTotal) for PoE models if needed.
@@ -134,9 +131,9 @@ modules:
                     entPhysicalIndex: '{{ $index }}'
                     entPhysicalIndex_measured: 'ports'
                     group: transceiver
-                    skip_values: 0
 
-        # CPU utilization monitoring
+        # CPU utilization monitoring - stack-aware
+        # Provides per-unit CPU monitoring for stacked systems
         load:
             data:
                 -
@@ -144,6 +141,21 @@ modules:
                     value: snAgentCpuUtilPercent
                     index: 'snAgentCpuUtilPercent.{{ $index }}'
                     descr: 'CPU {{ $index }}'
+
+        # Temperature monitoring for overview page
+        temperature:
+            data:
+                -
+                    # Stack-aware temperature table (per-unit indexed)
+                    # Index format: unit.slot.sensor (e.g., 1.1.1 = unit 1, slot 1, sensor 1)
+                    # subindex0 = unit ID, subindex1 = slot, subindex2 = sensor
+                    oid: snAgentTemp2Table
+                    value: snAgentTemp2Value
+                    divisor: 2
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.2.13.3.1.5.{{ $index }}'
+                    descr: 'Unit {{ $subindex0 }}/{{ $subindex1 }} {{ $snAgentTemp2SensorDescr }}'
+                    index: '{{ $index }}'
+                    group: 'Stack Unit Temperatures'
 
         # State sensors (PSU, Fan, Stack)
         state:
@@ -314,6 +326,7 @@ modules:
                         - { value: 3, descr: failure, graph: 0, generic: 2 }
                 -
                     oid: snStackingGlobalConfigState
+                    value: snStackingGlobalConfigState
                     num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.1.1.{{ $index }}'
                     descr: 'Stack Configuration'
                     index: 'snStackingGlobalConfigState.{{ $index }}'
@@ -433,23 +446,29 @@ modules:
 # monitoring this role are enabled; all others (Cisco-specific, server/desktop, etc.)
 # are explicitly disabled.
 discovery_modules:
-    # Enabled: L2 switch + light L3
-    arp-table: false
-    discovery-protocols: false
-    entity-physical: false  # FCX/ICX typically lack ENTITY-MIB::entPhysicalTable; skip failed walk
-    fdb-table: true
-    ipv4-addresses: true
-    ipv6-addresses: true
-    lldp: true
+    # Core functionality for Brocade stack switches
     os: true
     ports: true
-    ports-stack: true
-    route: true
-    sensors: true
-    storage: false
-    stp: true
-    vlans: true
-    # Disabled: routing protocols (BGP, OSPF), Cisco-specific, server/desktop, other
+    ports-stack: true  # Stack port monitoring
+    sensors: true      # All sensor types
+    mempools: true     # Memory monitoring
+    processors: true   # CPU monitoring
+
+    # Network protocols
+    lldp: true         # Link layer discovery
+    stp: true          # Spanning tree protocol
+    vlans: true        # VLAN discovery
+
+    # Address management
+    ipv4-addresses: true
+    ipv6-addresses: true
+    fdb-table: true    # Forwarding database
+
+    # Routing (light L3)
+    route: true        # Basic routing table
+
+    # Disabled: Unused protocols and features
+    arp-table: false
     bgp: false
     cisco-cef: false
     cisco-mac-accounting: false
@@ -457,14 +476,15 @@ discovery_modules:
     cisco-pw: false
     cisco-vrf-lite: false
     discovery-arp: false
+    discovery-protocols: false
+    entity-physical: false  # FCX/ICX lack ENTITY-MIB
     entity-state: false
-    hr-device: true
-    mempools: true
+    hr-device: false   # Host resources (server-focused)
     ospf: false
     ospfv3: false
-    processors: true
-    slas: false
-    vrf: false
+    slas: false        # Service level agreements
+    storage: false     # Disk/storage monitoring
+    vrf: false         # Virtual routing/forwarding
 
 poller_modules:
     # Enabled: L2 switch + light L3
