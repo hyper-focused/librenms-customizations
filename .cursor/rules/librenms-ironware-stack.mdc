@@ -1,38 +1,7 @@
 ---
-description: Cursor AI Rules for LibreNMS IronWare/FastIron Stack Discovery Project
 alwaysApply: true
 ---
-
 # Cursor AI Rules for LibreNMS IronWare/FastIron/ICX Stack Discovery Project
-
-## Model Selection Strategy
-
-### Use grok-code-fast-1 for:
-- **Initial implementation** of new features
-- **Heavy code generation** tasks (creating new files, boilerplate)
-- **Rapid prototyping** of discovery modules, polling logic
-- **Bulk code creation** (multiple test files, example configs)
-- **Speed-critical tasks** where iteration speed matters more than perfection
-- **First drafts** of documentation or code
-- **Scaffolding** new modules or structures
-
-**Goal**: Generate rough but complete drafts quickly. Don't overthink. Get working code fast.
-
-### Use Claude (Sonnet) for:
-- **Code review** and quality assurance
-- **Merging** different implementations or resolving conflicts
-- **Comparing** agent outputs or different approaches
-- **Architecture decisions** and design patterns
-- **Debugging** complex issues or subtle bugs
-- **Security review** of SNMP handling and database operations
-- **Performance optimization** of discovery/polling logic
-- **Final polish** before committing to upstream LibreNMS
-- **Documentation refinement** and technical writing
-- **Edge case handling** and error scenarios
-
-**Goal**: Be meticulous, hunt subtle bugs, improve architecture and readability.
-
-Exception: If the task is **very small and isolated** (e.g. fixing one regex, tweaking a single function signature), use whichever model is already in context / has the latest file open to avoid unnecessary context switches.
 
 ## Project-Specific Guidelines
 
@@ -396,17 +365,4 @@ This code is intended for LibreNMS upstream contribution. Ensure:
 
 ## Summary for AI Assistants
 
-**Fast iteration (grok-code-fast-1)**:
-- Generate complete working code quickly
-- Don't overthink architecture initially
-- Get testable implementations fast
-- Create comprehensive boilerplate
-
-**Quality review (Claude)**:
-- Scrutinize for bugs and edge cases
-- Optimize architecture and patterns
-- Ensure platform compatibility (FCX + ICX)
-- Polish for production readiness
-- Review before upstream submission
-
-**Always remember**: This project supports TWO distinct but related platforms (Foundry FCX and Brocade/Ruckus ICX). Every design decision should consider both.
+**Always remember**: This project supports TWO distinct but related platforms (Foundry FCX and Brocade/Ruckus ICX). Every design decision should consider both platforms for maximum compatibility and robustness.

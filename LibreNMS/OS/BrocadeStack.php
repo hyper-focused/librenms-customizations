@@ -70,41 +70,9 @@ class BrocadeStack extends OS implements ProcessorDiscovery
      */
     public function discoverProcessors(): void
     {
-        $device = $this->getDevice();
-        $topology = IronwareStackTopology::where('device_id', $device->device_id)->first();
-        $isStacked = $topology && $topology->topology !== 'standalone' && $topology->unit_count > 1;
-
-        $cpuData = \SnmpQuery::walk('FOUNDRY-SN-AGENT-MIB::snAgentCpuUtilTable')->table();
-
-        if (!empty($cpuData)) {
-            foreach ($cpuData as $index => $data) {
-                // Prefer snAgentCpuUtil100thPercent (column 6), fallback to snAgentCpuUtilPercent (column 5)
-                // snAgentCpuUtilValue (column 4) is deprecated per MIB
-                $util5min = $data['snAgentCpuUtil100thPercent'] ?? $data['snAgentCpuUtilPercent'] ?? $data['snAgentCpuUtilValue'] ?? null;
-
-                if ($util5min !== null) {
-                    // Index format: slot.cpu.interval (e.g., "1.1.0" = unit 1, CPU 1, interval 0)
-                    // Extract unit ID from index for stacked systems
-                    $unitId = $isStacked ? explode('.', $index)[0] : $index;
-                    $label = $isStacked ? "Unit {$unitId} CPU" : "CPU";
-                    
-                    // Convert 100th percent to percent if needed
-                    $utilPercent = isset($data['snAgentCpuUtil100thPercent']) ? $util5min / 100 : $util5min;
-                    
-                    $this->discoverProcessor(
-                        'FOUNDRY-SN-AGENT-MIB',
-                        $index,
-                        $utilPercent,
-                        isset($data['snAgentCpuUtil100thPercent']) ? 'snAgentCpuUtil100thPercent' : (isset($data['snAgentCpuUtilPercent']) ? 'snAgentCpuUtilPercent' : 'snAgentCpuUtilValue'),
-                        $label,
-                        1,
-                        $index,
-                        null,
-                        true
-                    );
-                }
-            }
-        }
+        // CPU monitoring is now handled via YAML sensors (load type) instead of custom processor discovery
+        // This provides better integration with LibreNMS sensor system and avoids duplication
+        // The snAgentCpuUtilTable is polled via sensors configuration in brocade-stack.yaml
     }
 
     /**
@@ -139,6 +107,8 @@ class BrocadeStack extends OS implements ProcessorDiscovery
     private function discoverStackTopology(): void
     {
         $device = $this->getDevice();
+
+        \Log::info("BrocadeStack: Starting stack topology discovery for device {$device->hostname} (ID: {$device->device_id})");
 
         $stackStateQuery = \SnmpQuery::get('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalConfigState.0');
         $stackState = $stackStateQuery->value();
@@ -529,52 +499,6 @@ class BrocadeStack extends OS implements ProcessorDiscovery
     }
 
     /**
-     * Detect stack via sysName parsing
-     * Example: "h08-h05_stack" suggests a stack
-     *
-     * @param Device $device
-     * @return bool True if stack was detected and recorded
-     */
-    private function detectStackViaSysName(Device $device): bool
-    {
-        // Check if sysName contains stack indicators
-        if (preg_match('/_stack$/i', $device->sysName)) {
-            // sysName ends with "_stack" - likely a stack
-            // Try to extract unit count from name pattern
-            $unitCount = 1; // Default
-            
-            // Pattern: "h08-h05_stack" suggests 2 units (h08 and h05)
-            if (preg_match('/-.*_stack$/i', $device->sysName)) {
-                // Count hyphens before _stack to estimate units
-                $parts = explode('-', $device->sysName);
-                $unitCount = count($parts) - 1; // Subtract 1 for _stack part
-            }
-            
-            IronwareStackTopology::updateOrCreate(
-                ['device_id' => $device->device_id],
-                [
-                    'topology' => $unitCount > 1 ? 'ring' : 'standalone',
-                    'unit_count' => $unitCount,
-                    'master_unit' => 1,
-                    'stack_mac' => null,
-                ]
-            );
-            
-            if (config('app.debug')) {
-                \Log::debug("BrocadeStack: Detected stack via sysName", [
-                    'device_id' => $device->device_id,
-                    'sysName' => $device->sysName,
-                    'unit_count' => $unitCount
-                ]);
-            }
-            
-            return true;
-        }
-        
-        return false;
-    }
-
-    /**
      * Try additional stack-related OIDs that might work on stacked switches
      *
      * @param Device $device
@@ -583,6 +507,14 @@ class BrocadeStack extends OS implements ProcessorDiscovery
     private function tryAdditionalStackOIDs(Device $device): bool
     {
         $stackDataFound = false;
+
+        // Method 1: Try sysName parsing for stack indicators
+        \Log::info("BrocadeStack: Attempting sysName-based stack detection for device {$device->hostname}");
+        if ($this->detectStackViaSysName($device)) {
+            return true;
+        }
+
+        // Method 2: Try alternative OIDs
         $alternativeOIDs = [
             'snStackMemberCount' => self::OID_STACK_MEMBER_COUNT,
             'snStackPortCount' => self::OID_STACK_PORT_COUNT,
@@ -608,6 +540,73 @@ class BrocadeStack extends OS implements ProcessorDiscovery
         }
 
         return $stackDataFound;
+    }
+
+    /**
+     * Detect stack via sysName parsing
+     * Example: "h08-h05_stack" suggests a stack
+     *
+     * @param Device $device
+     * @return bool True if stack was detected and recorded
+     */
+    private function detectStackViaSysName(Device $device): bool
+    {
+        // Check if sysName contains stack indicators
+        if (preg_match('/_stack$/i', $device->sysName)) {
+            \Log::info("BrocadeStack: Detected stack via sysName pattern: {$device->sysName}");
+            // sysName ends with "_stack" - likely a stack
+            // Try to extract unit count from name pattern
+            $unitCount = 1; // Default
+
+            // Pattern: "h08-h05_stack" suggests 2 units (h08 and h05)
+            if (preg_match('/-.*_stack$/i', $device->sysName)) {
+                // Count hyphens before _stack to estimate units
+                $stackName = preg_replace('/_stack$/i', '', $device->sysName);
+                $parts = explode('-', $stackName);
+                $unitCount = count($parts);
+            }
+
+            IronwareStackTopology::updateOrCreate(
+                ['device_id' => $device->device_id],
+                [
+                    'topology' => $unitCount > 1 ? 'ring' : 'standalone',
+                    'unit_count' => $unitCount,
+                    'master_unit' => 1,
+                    'stack_mac' => null,
+                ]
+            );
+
+            // Create member records for each unit
+            for ($unitId = 1; $unitId <= $unitCount; $unitId++) {
+                IronwareStackMember::updateOrCreate(
+                    [
+                        'device_id' => $device->device_id,
+                        'unit_id' => $unitId,
+                    ],
+                    [
+                        'role' => $unitId === 1 ? 'master' : 'member',
+                        'state' => 'active',
+                        'serial_number' => null,
+                        'model' => $this->extractModelFromSysDescr($device->sysDescr),
+                        'version' => $this->extractVersionFromSysDescr($device->sysDescr),
+                        'mac_address' => null,
+                        'priority' => 128,
+                    ]
+                );
+            }
+
+            if (config('app.debug')) {
+                \Log::debug("BrocadeStack: Detected stack via sysName", [
+                    'device_id' => $device->device_id,
+                    'sysName' => $device->sysName,
+                    'unit_count' => $unitCount
+                ]);
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
