@@ -1,8 +1,13 @@
 # Brocade Stack OS Discovery
 # Single unified discovery: FastIron (FCX, FWS, FLS, etc.) + ICX stackable switches
 # Shared MIBs and logic for both platforms; stack-aware per-unit discovery
+<<<<<<< HEAD
 ---
 mib: FOUNDRY-SN-AGENT-MIB:FOUNDRY-SN-SWITCH-GROUP-MIB:FOUNDRY-SN-STACKING-MIB:Brocade-REG-MIB:FOUNDRY-SN-ROOT-MIB
+=======
+
+mib: FOUNDRY-SN-AGENT-MIB:FOUNDRY-SN-SWITCH-GROUP-MIB:FOUNDRY-SN-STACKING-MIB
+>>>>>>> 186097fef2a222df859e331a0411d20c6ccbcf26
 modules:
     mempools:
         additional_oids:
@@ -31,7 +36,11 @@ modules:
         sysDescr_regex: '/(?:IronWare|FastIron) Version (?<version>[\d.]+[a-zA-Z0-9]*)/i'
         # Extract hardware from sysDescr (FastIron + ICX model names)
         # Matches: FCX648, FWS, FLS, ICX6450-48, ICX7150-48P, etc.
+<<<<<<< HEAD
         hardware:
+=======
+        hardware: 
+>>>>>>> 186097fef2a222df859e331a0411d20c6ccbcf26
             - FOUNDRY-SN-AGENT-MIB::snChasUnitDescription.1
         hardware_regex: '/(?:FCX|FWS|FLS|ICX)\d*[A-Z0-9-]*/i'
         serial: FOUNDRY-SN-AGENT-MIB::snChasSerNum.0
@@ -87,14 +96,22 @@ modules:
                     entPhysicalIndex_measured: 'ports'
                     group: transceiver
                     skip_values: 0
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 186097fef2a222df859e331a0411d20c6ccbcf26
         # PoE disabled by default: avoids 0-value PoE sensors on device overview for non-PoE devices.
         # Re-add via conditional PHP (probe snAgentPoeGblPowerCapacityTotal) for PoE models if needed.
         count:
             data: []
         power:
             data: []
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 186097fef2a222df859e331a0411d20c6ccbcf26
         # Temperature monitoring (stack-aware)
         temperature:
             data:
@@ -173,6 +190,7 @@ modules:
                 -
                     # Power Supply monitoring - Stack-aware version (WORKS on IronWare 08.0.30uT7f1!)
                     # Index format: unit.psu (e.g., 1.1 = unit 1 PSU 1, 2.1 = unit 2 PSU 1)
+<<<<<<< HEAD
                     # Table: snChasPwrSupply2Table (.1.3.6.1.4.1.1991.1.1.1.2.2) - stack-wide PSU data
                     # Provides monitoring for ALL 6 stack units on your FCX648!
                     oid: snChasPwrSupply2Table
@@ -210,6 +228,13 @@ modules:
                     value: snChasPwrSupplyOperStatus
                     num_oid: '.1.3.6.1.4.1.1991.1.1.1.2.1.1.3.{{ $index }}'
                     descr: '{{ $snChasPwrSupplyDescription }}'
+=======
+                    # No skip_values so all PSUs display (including status "other" = 1)
+                    oid: snChasPwrSupplyTable
+                    value: snChasPwrSupplyOperStatus
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.1.2.1.1.3.{{ $index }}'
+                    descr: 'Unit {{ $subindex0 }} {{ $snChasPwrSupplyDescription }}'
+>>>>>>> 186097fef2a222df859e331a0411d20c6ccbcf26
                     index: '{{ $index }}'
                     group: Power Supply
                     state_name: snChasPwrSupplyOperStatus
@@ -236,6 +261,7 @@ modules:
                 -
                     # Fan monitoring - Stack-aware version (WORKS on IronWare 08.0.30uT7f1!)
                     # Index format: unit.fan (e.g., 1.1 = unit 1 fan 1, 2.1 = unit 2 fan 1)
+<<<<<<< HEAD
                     # Table: snChasFan2Table (.1.3.6.1.4.1.1991.1.1.1.3.2) - stack-wide fan data
                     # Provides monitoring for ALL 6 stack units on your FCX648!
                     oid: snChasFan2Table
@@ -273,6 +299,12 @@ modules:
                     value: snChasFanOperStatus
                     num_oid: '.1.3.6.1.4.1.1991.1.1.1.3.1.1.3.{{ $index }}'
                     descr: '{{ $snChasFanDescription }}'
+=======
+                    oid: snChasFanTable
+                    value: snChasFanOperStatus
+                    num_oid: '.1.3.6.1.4.1.1991.1.1.1.3.1.1.3.{{ $index }}'
+                    descr: 'Unit {{ $subindex0 }} {{ $snChasFanDescription }}'
+>>>>>>> 186097fef2a222df859e331a0411d20c6ccbcf26
                     index: 'snChasFanOperStatus.{{ $index }}'
                     group: Fan Status
                     state_name: snChasFanOperStatus
@@ -280,6 +312,7 @@ modules:
                         - { value: 1, descr: other, graph: 0, generic: 3 }
                         - { value: 2, descr: normal, graph: 1, generic: 0 }
                         - { value: 3, descr: failure, graph: 0, generic: 2 }
+<<<<<<< HEAD
                     skip_values:
                         -
                             # Skip if this appears to be a stacking system
@@ -312,6 +345,8 @@ modules:
                         - { value: 1, descr: other, graph: 0, generic: 3 }
                         - { value: 2, descr: normal, graph: 1, generic: 0 }
                         - { value: 3, descr: failure, graph: 0, generic: 2 }
+=======
+>>>>>>> 186097fef2a222df859e331a0411d20c6ccbcf26
                 -
                     oid: snStackingGlobalConfigState
                     num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.1.1.{{ $index }}'
@@ -331,9 +366,15 @@ modules:
                     index: 'snStackingOperUnitState.{{ $index }}'
                     skip_values:
                         -
+<<<<<<< HEAD
                             oid: SNMPv2-MIB::sysDescr.0
                             op: '!~'
                             value: 'Stacking System'
+=======
+                            oid: snStackingGlobalConfigState.0
+                            op: '!='
+                            value: 1
+>>>>>>> 186097fef2a222df859e331a0411d20c6ccbcf26
                     group: Stack Status
                     state_name: snStackingOperUnitState
                     states:
@@ -343,6 +384,7 @@ modules:
                         - { value: 4, descr: empty, graph: 0, generic: 2 }
                 -
                     oid: snStackingOperUnitTable
+<<<<<<< HEAD
                     value: snStackingOperUnitRole
                     num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.{{ $index }}'
                     descr: 'Unit {{ $index }} Role'
@@ -362,15 +404,23 @@ modules:
                         - { value: 5, descr: standalone, graph: 1, generic: 0 }
                 -
                     oid: snStackingOperUnitTable
+=======
+>>>>>>> 186097fef2a222df859e331a0411d20c6ccbcf26
                     value: snStackingOperUnitStackPort1State
                     num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.8.{{ $index }}'
                     descr: 'Unit {{ $index }} Stack Port 1 → Unit {{ $snStackingOperUnitNeighbor1 }}'
                     index: 'snStackingOperUnitStackPort1State.{{ $index }}'
                     skip_values:
                         -
+<<<<<<< HEAD
                             oid: SNMPv2-MIB::sysDescr.0
                             op: '!~'
                             value: 'Stacking System'
+=======
+                            oid: snStackingGlobalConfigState.0
+                            op: '!='
+                            value: 1
+>>>>>>> 186097fef2a222df859e331a0411d20c6ccbcf26
                         -
                             oid: snStackingOperUnitStackPort1
                             op: '='
@@ -389,9 +439,15 @@ modules:
                     index: 'snStackingOperUnitStackPort2State.{{ $index }}'
                     skip_values:
                         -
+<<<<<<< HEAD
                             oid: SNMPv2-MIB::sysDescr.0
                             op: '!~'
                             value: 'Stacking System'
+=======
+                            oid: snStackingGlobalConfigState.0
+                            op: '!='
+                            value: 1
+>>>>>>> 186097fef2a222df859e331a0411d20c6ccbcf26
                         -
                             oid: snStackingOperUnitStackPort2
                             op: '='
@@ -402,6 +458,7 @@ modules:
                         - { value: 1, descr: other, graph: 0, generic: 3 }
                         - { value: 2, descr: up, graph: 1, generic: 0 }
                         - { value: 3, descr: down, graph: 0, generic: 2 }
+<<<<<<< HEAD
                 -
                     # Module status monitoring - Stack-aware version (used when stacking enabled)
                     # Index format: unit.slot (e.g., 1.1 = unit 1 slot 1, 2.1 = unit 2 slot 1)
@@ -428,14 +485,21 @@ modules:
                         - { value: 9, descr: moduleComingUp, graph: 0, generic: 1 }
                         - { value: 10, descr: moduleRunning, graph: 1, generic: 0 }
                         - { value: 11, descr: moduleBlocked, graph: 0, generic: 2 }
+=======
+>>>>>>> 186097fef2a222df859e331a0411d20c6ccbcf26
 
 # Layer 2 switch with light L3 (static routes, EIGRP, RIP). Only modules useful for
 # monitoring this role are enabled; all others (Cisco-specific, server/desktop, etc.)
 # are explicitly disabled.
 discovery_modules:
     # Enabled: L2 switch + light L3
+<<<<<<< HEAD
     arp-table: false
     discovery-protocols: false
+=======
+    arp-table: true
+    discovery-protocols: true
+>>>>>>> 186097fef2a222df859e331a0411d20c6ccbcf26
     entity-physical: false  # FCX/ICX typically lack ENTITY-MIB::entPhysicalTable; skip failed walk
     fdb-table: true
     ipv4-addresses: true
@@ -458,11 +522,19 @@ discovery_modules:
     cisco-vrf-lite: false
     discovery-arp: false
     entity-state: false
+<<<<<<< HEAD
     hr-device: true
     mempools: true
     ospf: false
     ospfv3: false
     processors: true
+=======
+    hr-device: false
+    mempools: false
+    ospf: false
+    ospfv3: false
+    processors: false
+>>>>>>> 186097fef2a222df859e331a0411d20c6ccbcf26
     slas: false
     vrf: false
 
@@ -471,12 +543,20 @@ poller_modules:
     availability: true
     entity-physical: false  # Matches discovery; no ENTITY-MIB on these devices
     lldp: true
+<<<<<<< HEAD
     ntp: false
+=======
+    ntp: true
+>>>>>>> 186097fef2a222df859e331a0411d20c6ccbcf26
     os: true
     ports: true
     sensors: true
     stp: true
+<<<<<<< HEAD
     storage: false
+=======
+    storage: true
+>>>>>>> 186097fef2a222df859e331a0411d20c6ccbcf26
     # Disabled: Cisco-specific, server/desktop, routing protocols, load balancers, etc.
     applications: false
     aruba-controller: false
@@ -491,13 +571,19 @@ poller_modules:
     cisco-otv: false
     cisco-remote-access-monitor: false
     cisco-vpdn: false
+<<<<<<< HEAD
     entity-state: true
     hr-mib: true
+=======
+    entity-state: false
+    hr-mib: false
+>>>>>>> 186097fef2a222df859e331a0411d20c6ccbcf26
     ipmi: false
     ipSystemStats: false
     junose-atm-vp: false
     loadbalancers: false
     mef: false
+<<<<<<< HEAD
     mempools: true
     nac: false
     netstats: true
@@ -505,6 +591,15 @@ poller_modules:
     ospfv3: false
     printer-supplies: false
     processors: true
+=======
+    mempools: false
+    nac: false
+    netstats: false
+    ospf: false
+    ospfv3: false
+    printer-supplies: false
+    processors: false
+>>>>>>> 186097fef2a222df859e331a0411d20c6ccbcf26
     services: false
     slas: false
     ucd-diskio: false

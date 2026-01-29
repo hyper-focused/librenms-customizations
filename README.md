@@ -1,55 +1,53 @@
-# LibreNMS Foundry/Brocade/Ruckus IronWare Stack Discovery
+# LibreNMS FastIron & ICX Stack Discovery (Unified)
 
-This project enhances LibreNMS support for Foundry, Brocade, and Ruckus switches running IronWare/FastIron OS, with special focus on properly discovering and monitoring stacked switch configurations.
+This project provides **one unified LibreNMS module** for **FastIron** (FCX, FWS, FLS, etc.) and **ICX** stackable switches — shared OS detection, discovery, and polling for both platforms.
 
 ## Overview
 
-IronWare-based switches (Foundry FCX, Brocade/Ruckus ICX series) support advanced stacking technology where multiple physical switches operate as a single logical unit. This project improves LibreNMS's ability to:
+A single OS (`brocade-stack`) and one codebase handle:
 
-- Accurately detect IronWare-based switches (FCX, ICX series)
-- Discover stack configurations and members
-- Monitor stack health and topology
-- Track hardware inventory per stack member
-- Alert on stack-related events
+- **FastIron** — FCX, FWS, FLS, and other IronWare/FastIron stackable and fixed switches
+- **ICX** — All ICX stackable series (6430, 6450, 6610, 6650, 7150, 7250, 7450, 7650, 7750)
 
-## Supported Platforms
+Capabilities:
 
-### Foundry Networks (Legacy)
-- **FCX Series**: FCX624, FCX648 (original Foundry branding)
+- Detect FastIron and ICX devices with shared rules
+- Discover stack topology and members
+- Monitor stack health and per-unit inventory
+- Track hardware (serial, model, version) per stack member
+- Use the same MIB set (FOUNDRY-SN-*) for both platforms
 
-### Brocade/Ruckus (Current)
-- **ICX 6450 Series**: Campus access switches
-- **ICX 7150 Series**: Stackable campus switches
-- **ICX 7250 Series**: Advanced campus switches
-- **ICX 7450 Series**: Aggregation/core switches
-- **ICX 7650 Series**: High-performance data center switches
-- **ICX 7750 Series**: Modular chassis and stackable switches
+## Supported Platforms (This Module)
 
-All platforms run IronWare (Foundry) or FastIron (Brocade/Ruckus) operating systems and share similar SNMP MIB structures for stack management.
+### FastIron (IronWare / FastIron OS)
+- **FCX** — FCX624, FCX648, etc.
+- **FWS** — FastIron Workgroup Switch
+- **FLS** — FastIron Layer 2/3 Switch
+- Other FastIron stackable/fixed models using the same MIBs
+
+### ICX (FastIron OS)
+- **ICX 6430 / 6450 / 6610 / 6650 / 7150 / 7250 / 7450 / 7650 / 7750** — all covered by this unified module
+
+### Optional
+- **TurboIron** may be included here if it shares the same MIBs and stacking behavior; otherwise it can be handled in a separate routing/modular project.
+
+A separate, **future project** (not started here) will address routing and modular platforms (e.g. NetIron, XMR, MLXe, CES/CER, SuperIron). See [docs/UNIFIED_PLATFORM_SCOPE.md](docs/UNIFIED_PLATFORM_SCOPE.md).
 
 ## Project Status
 
-✅ **Implementation Phase** - Core functionality implemented with known limitations
-
-**Current Status**:
-- ✅ OS detection working (sysObjectID-based)
-- ✅ Stack-capable device detection working
-- ⚠️ Stack MIBs don't work on firmware 08.0.30u (see [LIMITATIONS.md](docs/LIMITATIONS.md))
-- ✅ Alternative detection methods implemented (interface-based, sysName parsing)
-- ✅ Database schema created
-- ✅ Models and relationships implemented
-
-**Known Limitations**: See [docs/LIMITATIONS.md](docs/LIMITATIONS.md) for detailed information about working/non-working OIDs.
-
-See [PROJECT_PLAN.md](PROJECT_PLAN.md) for detailed project planning and [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md) for current status.
+Implementation in progress; core unified module in place. See **[PROJECT_STATUS.md](PROJECT_STATUS.md)** for current state, done, and next steps.
 
 ## Quick Links
 
-- **Project Plan**: [PROJECT_PLAN.md](PROJECT_PLAN.md) - Comprehensive project planning
-- **Project Status**: [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md) - Current status and summary
-- **SNMP Reference**: [docs/SNMP_REFERENCE.md](docs/SNMP_REFERENCE.md) - OID reference guide
-- **Limitations**: [docs/LIMITATIONS.md](docs/LIMITATIONS.md) - Known issues and workarounds
-- **Documentation Index**: [docs/README.md](docs/README.md) - All documentation
+| Doc | Description |
+|-----|-------------|
+| [PROJECT_STATUS.md](PROJECT_STATUS.md) | Current status, done, next steps |
+| [PROJECT_PLAN.md](PROJECT_PLAN.md) | Goals and technical plan |
+| [docs/UNIFIED_PLATFORM_SCOPE.md](docs/UNIFIED_PLATFORM_SCOPE.md) | Scope: FastIron + ICX (this repo) vs future routing/modular project |
+| [docs/README.md](docs/README.md) | Documentation index |
+| [docs/SNMP_REFERENCE.md](docs/SNMP_REFERENCE.md) | OIDs and MIBs |
+| [tests/TESTING_GUIDE.md](tests/TESTING_GUIDE.md) | Testing |
+| [TODO.md](TODO.md) | Task list |
 
 ## Background
 
@@ -76,12 +74,12 @@ Current LibreNMS support for IronWare-based switches, particularly in stacked co
 
 ## Project Goals
 
-1. **Accurate OS Detection**: Properly identify IronWare-based switches (FCX and ICX series)
-2. **Stack Discovery**: Detect and enumerate all stack members
-3. **Hardware Inventory**: Collect detailed information for each unit
+1. **Unified OS**: One module for FastIron (FCX, FWS, FLS, etc.) and ICX — shared detection, discovery, polling
+2. **Stack Discovery**: Detect and enumerate all stack members on both platforms
+3. **Hardware Inventory**: Collect detailed information per unit
 4. **Stack Monitoring**: Track stack health, topology, and events
-5. **Multi-Platform Support**: Handle differences between Foundry, Brocade, and Ruckus variants
-6. **Upstream Contribution**: Submit enhancements to LibreNMS project
+5. **Single Codebase**: No separate FastIron vs ICX OS; one `brocade-stack` OS and one PHP class
+6. **Upstream Contribution**: Submit unified enhancements to LibreNMS
 
 ## Repository Structure
 

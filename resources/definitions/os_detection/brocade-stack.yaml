@@ -1,9 +1,11 @@
 # Brocade Stack OS Detection
-# Unified detection for Foundry/Brocade/Ruckus stacked switches
-# Covers: FCX series, ICX 6450/6610/6650/7150/7250/7450/7650/7750
+# Single unified module: FastIron (FCX, FWS, FLS, etc.) + ICX stackable switches
+# FastIron: FCX, FWS, FLS — IronWare/FastIron OS, enterprise 1991
+# ICX: 6430/6450/6610/6650/7150/7250/7450/7650/7750 — FastIron OS, enterprise 1991/1588
+# Optional future: TurboIron if synergies exist (else in routing/modular project)
 
 os: brocade-stack
-text: 'Brocade Stacking System'
+text: 'FastIron / ICX Stack'
 type: network
 icon: brocade
 group: brocade
@@ -14,24 +16,24 @@ over:
 mib_dir: foundry
 discovery:
     -
-        # Primary detection: Stacking System in sysDescr
-        # Matches: "Brocade Communications Systems, Inc. Stacking System FCX648..."
-        # Matches: "Brocade Communications Systems, Inc. Stacking System ICX6450-48..."
-        # Matches: "Ruckus Stacking System ICX7150..."
+        # Primary: Stacking System in sysDescr (FastIron + ICX)
+        # Matches: "Stacking System FCX648...", "Stacking System ICX6450-48...", FWS, FLS, etc.
         sysDescr:
             - Stacking System
-        # Secondary detection: Verified sysObjectID pattern
-        # FCX648: .1.3.6.1.4.1.1991.1.3.48.2.1 (verified)
-        # ICX6450-48: .1.3.6.1.4.1.1991.1.3.48.5.1 (verified)
         sysObjectID:
-            - .1.3.6.1.4.1.1991.1.3.48  # FCX/ICX6xxx pattern (enterprise 1991)
+            - .1.3.6.1.4.1.1991.1.3.48  # Foundry stackable (FCX/ICX/FWS/FLS under 1991)
     -
-        # Alternate detection for newer firmware
-        # Matches: "Ruckus ICX ... FastIron Version..."
+        # FastIron/IronWare without "Stacking System" (e.g. standalone FWS/FLS/FCX)
         sysDescr:
-            - Stacking System
+            - IronWare
         sysObjectID:
-            - .1.3.6.1.4.1.1588.2.1.1.1.3  # Potential Brocade enterprise OID
+            - .1.3.6.1.4.1.1991.1.3
+    -
+        # Brocade enterprise (ICX, newer firmware)
+        sysDescr:
+            - FastIron
+        sysObjectID:
+            - .1.3.6.1.4.1.1588.2.1.1.1.3
 
 oids:
     no_bulk:
