@@ -38,12 +38,6 @@ modules:
         version: FOUNDRY-SN-AGENT-MIB::snAgImgVer.0
 
     sensors:
-        additional_oids:
-            data:
-                -
-                    oid:
-                        - ifDescr
-                        - snAgentTemp2SensorDescr
 
         # Optical transceiver monitoring (interface-based, stack-aware)
         # Interfaces in stacks use format: unit/slot/port (e.g., 1/1/1, 2/1/1)
