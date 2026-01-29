@@ -46,42 +46,6 @@ use LibreNMS\OS\Shared\Foundry;
 class BrocadeStack extends Foundry
 {
     /**
-<<<<<<< HEAD
-     * OID Constants for stack-related queries
-     * 
-     * OIDs verified against FOUNDRY-SN-STACKING-MIB from LibreNMS repository.
-     * Note: These OIDs may not exist on firmware 08.0.30u - see LIMITATIONS.md
-     */
-    private const OID_STACK_MEMBER_COUNT = '.1.3.6.1.4.1.1991.1.1.2.1.1.0';
-    private const OID_STACK_PORT_COUNT = '.1.3.6.1.4.1.1991.1.1.2.1.3.0';
-    
-    // Stack OIDs from FOUNDRY-SN-STACKING-MIB
-    // Base: snStacking = .1.3.6.1.4.1.1991.1.1.3.31
-    private const OID_STACK_CONFIG_STATE = '.1.3.6.1.4.1.1991.1.1.3.31.1.1.0';
-    private const OID_STACK_TOPOLOGY = '.1.3.6.1.4.1.1991.1.1.3.31.1.5.0';
-    private const OID_STACK_MAC = '.1.3.6.1.4.1.1991.1.1.3.31.1.2.0';
-    private const OID_STACK_OPER_TABLE = '.1.3.6.1.4.1.1991.1.1.3.31.2.2';
-    private const OID_STACK_CONFIG_TABLE = '.1.3.6.1.4.1.1991.1.1.3.31.2.1';
-
-    /**
-     * Discover processors for Foundry-based devices
-     * Uses stack-aware OIDs when stack is detected, standard OIDs for standalone
-     *
-     * For stacked configs: snAgentCpuUtilTable is indexed by unit/slot (stack-aware)
-     * For standalone: Same table but only contains unit 1 data
-     *
-     * @return void
-     */
-    public function discoverProcessors(): void
-    {
-        // CPU monitoring is now handled via YAML sensors (load type) instead of custom processor discovery
-        // This provides better integration with LibreNMS sensor system and avoids duplication
-        // The snAgentCpuUtilTable is polled via sensors configuration in brocade-stack.yaml
-    }
-
-    /**
-=======
->>>>>>> 186097fef2a222df859e331a0411d20c6ccbcf26
      * Discover OS information
      * Extends Foundry base class with stack topology discovery
      *
@@ -113,49 +77,9 @@ class BrocadeStack extends Foundry
     {
         $device = $this->getDevice();
 
-<<<<<<< HEAD
-        \Log::info("BrocadeStack: Starting stack topology discovery for device {$device->hostname} (ID: {$device->device_id})");
-
-        $stackStateQuery = \SnmpQuery::get('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalConfigState.0');
-        $stackState = $stackStateQuery->value();
-        
-        if (config('app.debug')) {
-            \Log::debug("BrocadeStack: Stack state query", [
-                'device_id' => $device->device_id,
-                'hostname' => $device->hostname,
-                'stackState' => $stackState,
-                'stackState_exists' => $stackState !== null,
-                'oid' => self::OID_STACK_CONFIG_STATE
-            ]);
-        }
-
-        if ($stackState === null || $stackState != 1) {
-            $isStackCapable = $this->isStackCapableDevice($device);
-
-            if (!$isStackCapable) {
-                IronwareStackTopology::where('device_id', $device->device_id)->delete();
-                return;
-            }
-            
-            $stackDetected = $this->detectStackViaAlternatives($device);
-            
-            if (!$stackDetected) {
-                IronwareStackTopology::updateOrCreate(
-                    ['device_id' => $device->device_id],
-                    [
-                        'topology' => 'standalone',
-                        'unit_count' => 1,
-                        'master_unit' => 1,
-                        'stack_mac' => null,
-                    ]
-                );
-                $this->discoverStandaloneUnit($device);
-            }
-=======
         // Require stack tables; skip stack discovery if migration was not run
         if (! Schema::hasTable('ironware_stack_topology') || ! Schema::hasTable('ironware_stack_members')) {
             \Log::warning('BrocadeStack: ironware_stack_topology / ironware_stack_members tables missing. Run: php artisan migrate --force');
->>>>>>> 186097fef2a222df859e331a0411d20c6ccbcf26
             return;
         }
 
@@ -388,132 +312,6 @@ class BrocadeStack extends Foundry
     }
 
     /**
-<<<<<<< HEAD
-     * Detect stack via interface names
-     * Stack interfaces are named like "Stack1/1", "Stack1/2", etc.
-     *
-     * @param Device $device
-     * @return array|null Array of detected units with their ports, or null if no stack interfaces found
-     */
-    private function detectStackViaInterfaces(Device $device): ?array
-    {
-        $ports = \DB::table('ports')
-            ->where('device_id', $device->device_id)
-            ->where('ifDescr', 'like', 'Stack%')
-            ->get(['ifIndex', 'ifDescr', 'ifOperStatus', 'ifAdminStatus']);
-
-        if ($ports->isEmpty()) {
-            return null;
-        }
-
-        $units = [];
-        foreach ($ports as $port) {
-            // Parse "Stack1/1" -> unit 1, port 1
-            // Parse "Stack2/1" -> unit 2, port 1
-            if (preg_match('/^Stack(\d+)\/(\d+)$/', $port->ifDescr, $matches)) {
-                $unitId = (int)$matches[1];
-                $portNum = (int)$matches[2];
-                
-                if (!isset($units[$unitId])) {
-                    $units[$unitId] = [
-                        'unit_id' => $unitId,
-                        'ports' => [],
-                        'port_count' => 0,
-                        'active_ports' => 0
-                    ];
-                }
-                $units[$unitId]['ports'][] = [
-                    'port_num' => $portNum,
-                    'ifIndex' => $port->ifIndex,
-                    'operStatus' => $port->ifOperStatus,
-                    'adminStatus' => $port->ifAdminStatus
-                ];
-                $units[$unitId]['port_count']++;
-                if ($port->ifOperStatus === 'up') {
-                    $units[$unitId]['active_ports']++;
-                }
-            }
-        }
-
-        return !empty($units) ? $units : null;
-    }
-
-    /**
-     * Detect stack using alternative methods when standard MIBs don't work
-     * 
-     * Tries multiple detection strategies:
-     * 1. Interface-based detection (Stack1/1, Stack1/2, etc.)
-     * 2. sysName parsing (e.g., "h08-h05_stack")
-     * 3. Configuration table (if available)
-     * 
-     * @param Device $device
-     * @return bool True if stack was detected and recorded
-     */
-    private function detectStackViaAlternatives(Device $device): bool
-    {
-        // Method 1: Interface-based detection
-        $stackInterfaces = $this->detectStackViaInterfaces($device);
-        if ($stackInterfaces !== null) {
-            $unitCount = count($stackInterfaces);
-            
-            IronwareStackTopology::updateOrCreate(
-                ['device_id' => $device->device_id],
-                [
-                    'topology' => $unitCount > 1 ? 'ring' : 'standalone',
-                    'unit_count' => $unitCount,
-                    'master_unit' => 1,
-                    'stack_mac' => null,
-                ]
-            );
-            
-            foreach ($stackInterfaces as $unitId => $unitData) {
-                IronwareStackMember::updateOrCreate(
-                    [
-                        'device_id' => $device->device_id,
-                        'unit_id' => $unitId,
-                    ],
-                    [
-                        'role' => $unitId === 1 ? 'master' : 'member',
-                        'state' => 'active',
-                        'serial_number' => null,
-                        'model' => $this->extractModelFromSysDescr($device->sysDescr),
-                        'version' => $this->extractVersionFromSysDescr($device->sysDescr),
-                        'mac_address' => null,
-                        'priority' => 128,
-                    ]
-                );
-            }
-            
-            if (config('app.debug')) {
-                \Log::debug("BrocadeStack: Detected stack via interfaces", [
-                    'device_id' => $device->device_id,
-                    'unit_count' => $unitCount
-                ]);
-            }
-            
-            return true;
-        }
-        
-        // Method 2: sysName parsing
-        if ($this->detectStackViaSysName($device)) {
-            return true;
-        }
-        
-        // Method 3: Try configuration table
-        $configMembersQuery = \SnmpQuery::walk('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingConfigUnitTable');
-        $configMembers = $configMembersQuery->table();
-        
-        if (!empty($configMembers)) {
-            $this->processConfigTableMembers($device, $configMembers);
-            return true;
-        }
-        
-        return false;
-    }
-
-    /**
-=======
->>>>>>> 186097fef2a222df859e331a0411d20c6ccbcf26
      * Try additional stack-related OIDs that might work on stacked switches
      *
      * @param Device $device
@@ -523,17 +321,7 @@ class BrocadeStack extends Foundry
     {
         $stackDataFound = false;
 
-<<<<<<< HEAD
-        // Method 1: Try sysName parsing for stack indicators
-        \Log::info("BrocadeStack: Attempting sysName-based stack detection for device {$device->hostname}");
-        if ($this->detectStackViaSysName($device)) {
-            return true;
-        }
-
-        // Method 2: Try alternative OIDs
-=======
         // Try various alternative stack OIDs
->>>>>>> 186097fef2a222df859e331a0411d20c6ccbcf26
         $alternativeOIDs = [
             // Try direct member count queries
             'snStackMemberCount' => '.1.3.6.1.4.1.1991.1.1.2.1.1.0',
@@ -558,73 +346,6 @@ class BrocadeStack extends Foundry
         }
 
         return $stackDataFound;
-    }
-
-    /**
-     * Detect stack via sysName parsing
-     * Example: "h08-h05_stack" suggests a stack
-     *
-     * @param Device $device
-     * @return bool True if stack was detected and recorded
-     */
-    private function detectStackViaSysName(Device $device): bool
-    {
-        // Check if sysName contains stack indicators
-        if (preg_match('/_stack$/i', $device->sysName)) {
-            \Log::info("BrocadeStack: Detected stack via sysName pattern: {$device->sysName}");
-            // sysName ends with "_stack" - likely a stack
-            // Try to extract unit count from name pattern
-            $unitCount = 1; // Default
-
-            // Pattern: "h08-h05_stack" suggests 2 units (h08 and h05)
-            if (preg_match('/-.*_stack$/i', $device->sysName)) {
-                // Count hyphens before _stack to estimate units
-                $stackName = preg_replace('/_stack$/i', '', $device->sysName);
-                $parts = explode('-', $stackName);
-                $unitCount = count($parts);
-            }
-
-            IronwareStackTopology::updateOrCreate(
-                ['device_id' => $device->device_id],
-                [
-                    'topology' => $unitCount > 1 ? 'ring' : 'standalone',
-                    'unit_count' => $unitCount,
-                    'master_unit' => 1,
-                    'stack_mac' => null,
-                ]
-            );
-
-            // Create member records for each unit
-            for ($unitId = 1; $unitId <= $unitCount; $unitId++) {
-                IronwareStackMember::updateOrCreate(
-                    [
-                        'device_id' => $device->device_id,
-                        'unit_id' => $unitId,
-                    ],
-                    [
-                        'role' => $unitId === 1 ? 'master' : 'member',
-                        'state' => 'active',
-                        'serial_number' => null,
-                        'model' => $this->extractModelFromSysDescr($device->sysDescr),
-                        'version' => $this->extractVersionFromSysDescr($device->sysDescr),
-                        'mac_address' => null,
-                        'priority' => 128,
-                    ]
-                );
-            }
-
-            if (config('app.debug')) {
-                \Log::debug("BrocadeStack: Detected stack via sysName", [
-                    'device_id' => $device->device_id,
-                    'sysName' => $device->sysName,
-                    'unit_count' => $unitCount
-                ]);
-            }
-
-            return true;
-        }
-
-        return false;
     }
 
     /**
