@@ -91,11 +91,11 @@ The actual stack member table might be at `.1.3.6.1.4.1.1991.1.1.2.1.2` not `.1.
 **File**: `resources/definitions/os_detection/brocade-stack.yaml`  
 **Issue**: Using `brocade-stack` as OS name
 
-LibreNMS already has `ironware` OS. According to LIBRENMS_COMPLIANCE_ANALYSIS.md, we should enhance the existing `ironware` OS rather than creating a new one.
+LibreNMS has `ironware` OS for basic device support. For comprehensive stack monitoring of Brocade/Ruckus switches, we implement `brocade-stack` OS.
 
 **Recommendation**: 
-- Option A: Enhance existing `ironware` OS
-- Option B: If new OS is needed, use `ironware-stack` to maintain consistency
+- Option A: Use `brocade-stack` OS for enhanced stack monitoring (implemented)
+- Option B: Basic `ironware` OS remains available for non-stackable devices
 
 ---
 

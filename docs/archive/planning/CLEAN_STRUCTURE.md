@@ -12,7 +12,7 @@
 **Directories Removed** (20+ files deleted):
 - ❌ `librenms-os-discovery/` - Old structure with includes/
 - ❌ `includes/` - Non-compliant directory
-- ❌ `librenms-patches/` - Obsolete ironware patches
+- ❌ `librenms-patches/` - Obsolete legacy patches
 
 **Files Removed**:
 - ❌ 7 fragmented YAML files (foundry-fcx, brocade-icx6450, etc.)
@@ -39,7 +39,7 @@ app/Models/
 └── IronwareStackMember.php            ✅ Stack member model (140 lines)
 
 database/migrations/
-└── 2026_01_17_000001_add_ironware_stack_tables.php ✅ (80 lines)
+└── 2026_01_17_000001_add_brocade_stack_tables.php ✅ (80 lines)
 
 resources/definitions/
 ├── os_detection/

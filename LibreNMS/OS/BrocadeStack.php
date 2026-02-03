@@ -37,8 +37,8 @@
 namespace LibreNMS\OS;
 
 use App\Models\Device;
-use App\Models\IronwareStackTopology;
-use App\Models\IronwareStackMember;
+use App\Models\BrocadeStackTopology;
+use App\Models\BrocadeStackMember;
 use Illuminate\Support\Facades\Schema;
 use LibreNMS\Component;
 use LibreNMS\OS\Shared\Foundry;
@@ -78,8 +78,8 @@ class BrocadeStack extends Foundry
         $device = $this->getDevice();
 
         // Require stack tables; skip stack discovery if migration was not run
-        if (! Schema::hasTable('ironware_stack_topology') || ! Schema::hasTable('ironware_stack_members')) {
-            \Log::warning('BrocadeStack: ironware_stack_topology / ironware_stack_members tables missing. Run: php artisan migrate --force');
+        if (! Schema::hasTable('brocade_stack_topologies') || ! Schema::hasTable('brocade_stack_members')) {
+            \Log::warning('BrocadeStack: brocade_stack_topologies / brocade_stack_members tables missing. Run: php artisan migrate --force');
             return;
         }
 
@@ -94,12 +94,12 @@ class BrocadeStack extends Foundry
 
             if (!$isStackCapable) {
                 // Not stack-capable, clean up old data
-                IronwareStackTopology::where('device_id', $device->device_id)->delete();
+                BrocadeStackTopology::where('device_id', $device->device_id)->delete();
                 return;
             }
 
             // Device is stack-capable but not stacked - record as standalone
-            IronwareStackTopology::updateOrCreate(
+            BrocadeStackTopology::updateOrCreate(
                 ['device_id' => $device->device_id],
                 [
                     'topology' => 'standalone',
@@ -148,7 +148,7 @@ class BrocadeStack extends Foundry
         $masterUnit = $this->findMasterUnit($members);
 
         // Update or create topology record
-        IronwareStackTopology::updateOrCreate(
+        BrocadeStackTopology::updateOrCreate(
             ['device_id' => $device->device_id],
             [
                 'topology' => $topology,
@@ -528,7 +528,7 @@ class BrocadeStack extends Foundry
         \Log::warning("Standard Foundry stack MIBs not available on device {$device->hostname}. Treating as standalone stack-capable device.");
 
         // Fall back to standalone discovery
-        IronwareStackTopology::updateOrCreate(
+        BrocadeStackTopology::updateOrCreate(
             ['device_id' => $device->device_id],
             [
                 'topology' => 'standalone',
@@ -556,7 +556,7 @@ class BrocadeStack extends Foundry
         $topologyValue = $topologyValue ?? 3;
 
         // Create topology record (caller already fetched topology/mac)
-        IronwareStackTopology::updateOrCreate(
+        BrocadeStackTopology::updateOrCreate(
             ['device_id' => $device->device_id],
             [
                 'topology' => $this->mapTopologyValue($topologyValue),

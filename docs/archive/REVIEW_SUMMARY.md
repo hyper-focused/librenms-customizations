@@ -36,10 +36,10 @@ Both ICX6450 (2-stack) and FCX648 (6-stack) show:
 
 ### 2. **OS Name Convention** ⚠️
 **Current**: `brocade-stack`  
-**LibreNMS Standard**: `ironware`
+**Brocade/Ruckus Stack Support**: `brocade-stack`
 
-LibreNMS already has `ironware` OS that handles these devices. Options:
-- **Option A**: Enhance existing `ironware` OS (recommended for upstream)
+LibreNMS has `ironware` OS for basic device support. For enhanced stack monitoring:
+- **Option A**: Use `brocade-stack` OS for stackable switches (implemented)
 - **Option B**: Keep `brocade-stack` as custom OS (for local use)
 
 ---

@@ -28,8 +28,8 @@
    - ✅ Per-unit serial numbers, models, versions
 
 4. **Database Schema**
-   - ✅ `ironware_stack_topology` table
-   - ✅ `ironware_stack_members` table
+   - ✅ `brocade_stack_topologies` table
+   - ✅ `brocade_stack_members` table
    - ✅ Proper relationships and indexes
 
 5. **Code Quality**
@@ -112,7 +112,7 @@ All OIDs verified against FOUNDRY-SN-STACKING-MIB.
 - `LibreNMS/OS/BrocadeStack.php` - Main OS class
 - `app/Models/IronwareStackTopology.php` - Topology model
 - `app/Models/IronwareStackMember.php` - Member model
-- `database/migrations/2026_01_17_000001_add_ironware_stack_tables.php` - Schema
+- `database/migrations/2026_01_17_000001_add_brocade_stack_tables.php` - Schema
 
 ### Configuration
 - `resources/definitions/os_detection/brocade-stack.yaml` - OS detection

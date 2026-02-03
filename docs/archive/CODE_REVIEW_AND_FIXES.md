@@ -144,10 +144,10 @@ private const OID_STACK_OPER_TABLE = '.1.3.6.1.4.1.1991.1.1.3.31.3.1';
 
 **Current**: `brocade-stack`
 
-**Issue**: LibreNMS uses `ironware` as the OS name for these devices.
+**Issue**: Brocade/Ruckus stackable switches need enhanced monitoring capabilities.
 
 **Recommendation**: 
-- Use `ironware` as the OS name
+- Use `brocade-stack` for enhanced stack monitoring
 - Add stack detection as enhancement to existing OS
 - Or create `ironware-stack` variant
 

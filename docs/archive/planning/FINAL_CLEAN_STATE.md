@@ -32,7 +32,7 @@
 │   └── IronwareStackMember.php        ✅ Stack member model
 │
 ├── database/migrations/
-│   └── 2026_01_17_000001_add_ironware_stack_tables.php ✅
+│   └── 2026_01_17_000001_add_brocade_stack_tables.php ✅
 │
 ├── resources/
 │   ├── definitions/

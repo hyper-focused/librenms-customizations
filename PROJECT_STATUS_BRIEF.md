@@ -10,7 +10,7 @@
 ### Phase 1: Core Implementation
 - ✅ **OS Detection**: Unified detection for FCX and ICX series via sysObjectID
 - ✅ **Stack Discovery**: Alternative detection methods (interface parsing, sysName analysis)
-- ✅ **Database Schema**: Created `ironware_stack_topology` and `ironware_stack_members` tables
+- ✅ **Database Schema**: Created `brocade_stack_topologies` and `brocade_stack_members` tables
 - ✅ **Models**: Implemented Eloquent models with proper relationships
 - ✅ **OS Class**: Created `BrocadeStack` class extending LibreNMS\OS
 - ✅ **CPU Discovery**: Implemented ProcessorDiscovery interface with stack-aware labeling

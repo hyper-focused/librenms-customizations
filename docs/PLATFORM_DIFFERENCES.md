@@ -290,7 +290,7 @@ Unified discovery module that:
 ### Database Schema
 
 Use platform-agnostic schema:
-- `ironware_stacks` table (not `foundry_stacks`)
+- `brocade_stack_topologies` and `brocade_stack_members` tables
 - Add `platform` column: 'fcx' or 'icx'
 - Allows future expansion
 

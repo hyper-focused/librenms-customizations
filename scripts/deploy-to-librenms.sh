@@ -32,8 +32,9 @@ PATHS=(
   "resources/definitions/os_discovery/brocade-stack.yaml"
   "app/Models/IronwareStackMember.php"
   "app/Models/IronwareStackTopology.php"
-  "database/migrations/2026_01_17_000001_add_ironware_stack_tables.php"
-  "database/migrations/2025_01_17_120000_add_ironware_stack_tables.php"
+  "database/migrations/2026_01_17_000002_rename_ironware_to_brocade_stack_tables.php"
+  "database/migrations/2026_01_17_000001_add_brocade_stack_tables.php"
+  "database/migrations/2025_01_17_120000_add_brocade_stack_tables.php"
   "docs/IMPLEMENTATION.md"
   "collect_snmp_data.sh"
 )
@@ -149,8 +150,9 @@ resources/definitions/os_detection/brocade-stack.yaml
 resources/definitions/os_discovery/brocade-stack.yaml
 app/Models/IronwareStackMember.php
 app/Models/IronwareStackTopology.php
-database/migrations/2026_01_17_000001_add_ironware_stack_tables.php
-database/migrations/2025_01_17_120000_add_ironware_stack_tables.php
+database/migrations/2026_01_17_000002_rename_ironware_to_brocade_stack_tables.php
+database/migrations/2026_01_17_000001_add_brocade_stack_tables.php
+database/migrations/2025_01_17_120000_add_brocade_stack_tables.php
 docs/IMPLEMENTATION.md
 collect_snmp_data.sh
 GITIGNORE_EOF"

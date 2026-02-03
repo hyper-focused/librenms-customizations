@@ -60,7 +60,7 @@ $stack_id = dbInsert([
     'platform' => $platform,
     'stack_count' => $unit_count,
     'last_discovered' => ['NOW()']
-], 'ironware_stacks');
+], 'brocade_stack_topologies');
 
 // Use transactions for multi-table operations when needed
 ```
@@ -166,7 +166,7 @@ snChasUnitSerNum               .1.3.6.1.4.1.1991.1.1.1.4.1.1.2
  * @param array $device Device array from LibreNMS
  * @return bool Success status
  */
-function discover_ironware_stack($device)
+function discover_brocade_stack($device)
 {
     // Platform detection
     $platform = detect_platform($device); // 'fcx' or 'icx'
@@ -211,7 +211,7 @@ foreach ($unit_ids as $id) {
 ```sql
 -- Always add indexes on foreign keys
 -- Index frequently queried columns
-ALTER TABLE ironware_stack_members 
+ALTER TABLE brocade_stack_members 
 ADD INDEX idx_stack_id (stack_id),
 ADD INDEX idx_unit_role (unit_role);
 ```
@@ -321,7 +321,7 @@ if ($data === false || empty($data)) {
 }
 
 // Use LibreNMS database layer
-$result = dbFetchRows('SELECT * FROM ironware_stacks WHERE device_id = ?', [$id]);
+$result = dbFetchRows('SELECT * FROM brocade_stack_topologies WHERE device_id = ?', [$id]);
 ```
 
 ## Pre-Commit Checklist
@@ -355,7 +355,7 @@ This code is intended for LibreNMS upstream contribution. Ensure:
 ├── includes/             # LibreNMS integration code
 │   ├── discovery/os/     # OS detection (foundry.inc.php, icx.inc.php)
 │   ├── definitions/      # OS definitions (foundry.yaml, icx.yaml)
-│   └── polling/          # Polling modules (ironware-stack.inc.php)
+│   └── polling/          # Polling modules (brocade-stack.inc.php)
 ├── docs/                 # Comprehensive documentation
 ├── tests/                # Test cases and test data
 ├── examples/             # Usage examples and configs

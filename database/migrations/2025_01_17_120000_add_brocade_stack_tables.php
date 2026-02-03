@@ -5,14 +5,16 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Migration to add IronWare stack topology and member tracking tables
+ * Migration to add Brocade stack topology and member tracking tables
  *
  * Enables visual stack topology mapping and per-unit hardware inventory
- * for Foundry FCX and Brocade/Ruckus ICX series switches
+ * for Brocade/Ruckus FCX and ICX series switches
+ *
+ * Compatible with Brocade IronWare and Ruckus FastIron platforms
  *
  * Tables:
- * - ironware_stack_topology: Overall stack configuration
- * - ironware_stack_members: Individual stack member details
+ * - brocade_stack_topologies: Overall stack configuration
+ * - brocade_stack_members: Individual stack member details
  */
 return new class extends Migration
 {
@@ -21,7 +23,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('ironware_stack_topology', function (Blueprint $table) {
+        Schema::create('brocade_stack_topologies', function (Blueprint $table) {
             $table->id();
             $table->unsignedInteger('device_id')->unique();
             $table->enum('topology', ['ring', 'chain', 'standalone', 'unknown'])->default('unknown');
@@ -39,7 +41,7 @@ return new class extends Migration
             $table->index('topology');
         });
 
-        Schema::create('ironware_stack_members', function (Blueprint $table) {
+        Schema::create('brocade_stack_members', function (Blueprint $table) {
             $table->id();
             $table->unsignedInteger('device_id');
             $table->tinyInteger('unit_id')->unsigned();
@@ -69,7 +71,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('ironware_stack_members');
-        Schema::dropIfExists('ironware_stack_topology');
+        Schema::dropIfExists('brocade_stack_members');
+        Schema::dropIfExists('brocade_stack_topologies');
     }
 };

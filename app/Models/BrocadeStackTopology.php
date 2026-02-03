@@ -58,7 +58,7 @@ class BrocadeStackTopology extends Model
      */
     public function members(): HasMany
     {
-        return $this->hasMany(IronwareStackMember::class, 'device_id', 'device_id')
+        return $this->hasMany(BrocadeStackMember::class, 'device_id', 'device_id')
                     ->orderBy('unit_id');
     }
 
@@ -105,9 +105,9 @@ class BrocadeStackTopology extends Model
     /**
      * Get the master unit details
      *
-     * @return IronwareStackMember|null
+     * @return BrocadeStackMember|null
      */
-    public function getMasterUnit(): ?IronwareStackMember
+    public function getMasterUnit(): ?BrocadeStackMember
     {
         if (!$this->master_unit) {
             return null;

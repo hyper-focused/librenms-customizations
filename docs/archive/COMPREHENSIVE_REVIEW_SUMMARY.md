@@ -135,9 +135,9 @@ private const OID_STACK_MEMBER_COUNT = '.1.3.6.1.4.1.1991.1.1.2.1.1.0';
 
 ### ⚠️ Needs Adjustment
 
-1. **OS Name**: Using `brocade-stack` instead of `ironware`
-   - LibreNMS uses `ironware` for all IronWare devices
-   - Consider enhancing existing `ironware` OS instead
+1. **OS Name**: Using `brocade-stack` for Brocade/Ruckus stackable switches
+   - Maintains compatibility with existing IronWare devices via standard `ironware` OS
+   - `brocade-stack` provides enhanced stack monitoring capabilities
 
 2. **Base Class**: Using non-existent `Foundry` class
    - Should extend `LibreNMS\OS` directly

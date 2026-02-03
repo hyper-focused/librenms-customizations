@@ -156,7 +156,7 @@ This project improves OS discovery and monitoring for IronWare/FastIron-based st
 │       └── icx.yaml                     # ICX OS definition
 ├── includes/
 │   └── polling/
-│       └── ironware-stack.inc.php       # Stack polling for all platforms
+│       └── brocade-stack.inc.php       # Stack polling for all platforms
 ├── mibs/
 │   ├── foundry/
 │   │   ├── FOUNDRY-SN-ROOT-MIB
@@ -170,7 +170,7 @@ This project improves OS discovery and monitoring for IronWare/FastIron-based st
 │       └── BROCADE-STACKABLE-MIB
 ├── sql-schema/
 │   └── migrations/
-│       └── XXX_add_ironware_stack_tables.sql
+│       └── XXX_add_brocade_stack_tables.sql
 ├── tests/
 │   ├── OSDiscoveryTest.php
 │   └── data/
@@ -208,18 +208,19 @@ This project improves OS discovery and monitoring for IronWare/FastIron-based st
 #### Stack Tables (Platform-Agnostic)
 ```sql
 -- Main stack information table (supports FCX and ICX)
-ironware_stacks (
-    stack_id INT PRIMARY KEY AUTO_INCREMENT,
+brocade_stack_topologies (
+    id INT PRIMARY KEY AUTO_INCREMENT,
     device_id INT FOREIGN KEY,
-    platform VARCHAR(16),            -- 'foundry' or 'icx'
-    stack_count INT,
-    stack_master_unit INT,
-    stack_topology VARCHAR(16),      -- 'ring', 'chain', 'standalone'
-    last_discovered TIMESTAMP
+    topology VARCHAR(16),            -- 'ring', 'chain', 'standalone', 'unknown'
+    unit_count INT,
+    master_unit INT,
+    stack_mac VARCHAR(17),
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
 )
 
 -- Stack member details
-ironware_stack_members (
+brocade_stack_members (
     member_id INT PRIMARY KEY AUTO_INCREMENT,
     stack_id INT FOREIGN KEY,
     unit_id INT,
@@ -234,7 +235,7 @@ ironware_stack_members (
 )
 
 -- Stack port status
-ironware_stack_ports (
+brocade_stack_ports (
     port_id INT PRIMARY KEY AUTO_INCREMENT,
     member_id INT FOREIGN KEY,
     port_index INT,

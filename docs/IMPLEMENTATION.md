@@ -47,7 +47,7 @@ See [scripts/README.md](../scripts/README.md) for the deploy script.
 
 1. **Run the migration** before or right after copying files. If the stack tables are missing you will see:
    - `Error discovering os module` and `Error discovering processors module`
-   - `Table 'librenms.ironware_stack_topology' doesn't exist`
+   - `Table 'librenms.brocade_stack_topologies' doesn't exist`
    - Fix: `sudo -u librenms bash -c 'cd /opt/librenms && php artisan migrate --force'`
 2. If migration is not run, BrocadeStack now skips stack topology discovery and logs a warning instead of throwing; OS discovery and other modules still run.
 

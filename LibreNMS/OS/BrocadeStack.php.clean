@@ -153,8 +153,8 @@ class BrocadeStack extends Foundry
             }
 =======
         // Require stack tables; skip stack discovery if migration was not run
-        if (! Schema::hasTable('ironware_stack_topology') || ! Schema::hasTable('ironware_stack_members')) {
-            \Log::warning('BrocadeStack: ironware_stack_topology / ironware_stack_members tables missing. Run: php artisan migrate --force');
+        if (! Schema::hasTable('brocade_stack_topologies') || ! Schema::hasTable('brocade_stack_members')) {
+            \Log::warning('BrocadeStack: brocade_stack_topologies / brocade_stack_members tables missing. Run: php artisan migrate --force');
 >>>>>>> 186097fef2a222df859e331a0411d20c6ccbcf26
             return;
         }
