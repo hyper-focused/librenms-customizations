@@ -61,6 +61,26 @@ skip_values:
         oid: SNMPv2-MIB::sysDescr.0
         op: '~'
         value: 'CES'
+    -
+        # Skip CER series (carrier ethernet routers)
+        oid: SNMPv2-MIB::sysDescr.0
+        op: '~'
+        value: 'CER'
+    -
+        # Skip ServerIron (server load balancing switches)
+        oid: SNMPv2-MIB::sysDescr.0
+        op: '~'
+        value: 'ServerIron'
+    -
+        # Skip FESX series (older FastIron Edge switches - use foundryos)
+        oid: SNMPv2-MIB::sysDescr.0
+        op: '~'
+        value: 'FESX'
+    -
+        # Skip FWSX series (older FastIron Workgroup switches - use foundryos)
+        oid: SNMPv2-MIB::sysDescr.0
+        op: '~'
+        value: 'FWSX'
     #  - Brocade enterprise not needed - fabric switch OID's only
         # Brocade enterprise (ICX, newer firmware)
         # sysDescr:
