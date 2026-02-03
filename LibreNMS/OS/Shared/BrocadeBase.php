@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Foundry.php
+ * BrocadeBase.php
  *
- * Shared base class for Foundry Networks and Brocade/Ruckus IronWare-based devices
+ * Shared base class for Brocade/Ruckus IronWare-based devices
  * Provides common CPU discovery functionality using FOUNDRY-SN-AGENT-MIB
  *
  * This program is free software: you can redistribute it and/or modify
@@ -31,7 +31,7 @@ use LibreNMS\Device\Processor;
 use LibreNMS\Interfaces\Discovery\ProcessorDiscovery;
 use LibreNMS\OS;
 
-class Foundry extends OS implements ProcessorDiscovery
+class BrocadeBase extends OS implements ProcessorDiscovery
 {
     /**
      * Discover processors for Foundry-based devices
