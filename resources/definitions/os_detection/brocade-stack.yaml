@@ -2,16 +2,16 @@
 # OID-based detection for FastIron + ICX stackable switches
 # Three methods: Stack mode, Standalone FastIron, Standalone ICX
 # No generic fallbacks - precise family-specific coverage
-
+---
 os: brocade-stack
 text: 'FastIron / ICX Stackable Switches'
 type: network
 icon: brocade
 group: brocade
 over:
-    - { graph: device_bits, text: 'Device Traffic' }
-    - { graph: device_processor, text: 'CPU Usage' }
-    - { graph: device_mempool, text: 'Memory Usage' }
+    - {graph: device_bits, text: 'Device Traffic'}
+    - {graph: device_processor, text: 'CPU Usage'}
+    - {graph: device_mempool, text: 'Memory Usage'}
 mib_dir: brocade
 discovery:
     -
@@ -39,10 +39,10 @@ discovery:
 
 # Skip non-stackable routing devices
 skip_values:
-    - { oid: "SNMPv2-MIB::sysDescr.0", op: "~", value: "NetIron" }
-    - { oid: "SNMPv2-MIB::sysDescr.0", op: "~", value: "BigIron" }
-    - { oid: "SNMPv2-MIB::sysDescr.0", op: "~", value: "TurboIron" }
-    - { oid: "SNMPv2-MIB::sysDescr.0", op: "~", value: "ServerIron" }
+    - {oid: "SNMPv2-MIB::sysDescr.0", op: "~", value: "NetIron"}
+    - {oid: "SNMPv2-MIB::sysDescr.0", op: "~", value: "BigIron"}
+    - {oid: "SNMPv2-MIB::sysDescr.0", op: "~", value: "TurboIron"}
+    - {oid: "SNMPv2-MIB::sysDescr.0", op: "~", value: "ServerIron"}
 
 oids:
     no_bulk:
