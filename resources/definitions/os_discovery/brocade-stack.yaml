@@ -298,19 +298,19 @@ discovery_modules:
     vrf: false         # Virtual routing/forwarding
 
 poller_modules:
-    # Enabled: L2 switch + light L3
-    availability: true
-    entity-physical: false  # Matches discovery; no ENTITY-MIB on these devices
-    lldp: true
-    ntp: false
-    os: true
-    ports: true
-    sensors: true
-    stp: true
-    # Additional enabled modules
-    entity-state: true
-    hr-mib: true
-    netstats: true
-    # All other discovery modules disabled (Cisco-specific, routing protocols, etc.)
+    # Working poller modules on FCX648 (based on actual polling)
+    availability: true     # ✓ Working
+    os: true               # ✓ Working
+    ports: true            # ✓ Working (polling interface data)
+    sensors: true          # ✓ Working
+    stp: true              # ✓ Working (returned bridge data)
+    entity-state: true     # ✓ Working
+    netstats: true         # ✓ Working (returned ICMP data)
+    # Disabled modules (not working on FCX648)
+    entity-physical: false # ❌ No ENTITY-MIB on FCX/ICX devices
+    lldp: false            # ❌ No LLDP support on FCX648
+    hr-mib: false          # ❌ No Such Object for HR MIB queries
+    ntp: false             # ❌ Not tested/required
+    # All other poller modules disabled
 
 stackable: true
