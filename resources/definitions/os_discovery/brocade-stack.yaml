@@ -81,17 +81,17 @@ modules:
             graph: 0
             generic: 2
         skip_values:
-                - oid: snStackingGlobalConfigState.0
-                  op: "!="
-                  value: 1
-                - oid: "SNMPv2-MIB::sysDescr.0"
-                  op: "!~"
-                  value: "(Stacking System|Stack|FCX.*Stack)"
-                - oid: "SNMPv2-MIB::sysName.0"
-                  op: "!~"
-                  value: "_stack$"
-                - oid: snChasPwrSupply2OperStatus.1.1
-                  op: not_exists
+          - oid: snStackingGlobalConfigState.0
+            op: "!="
+            value: 1
+          - oid: "SNMPv2-MIB::sysDescr.0"
+            op: "!~"
+            value: "(Stacking System|Stack|FCX.*Stack)"
+          - oid: "SNMPv2-MIB::sysName.0"
+            op: "!~"
+            value: "_stack$"
+          - oid: snChasPwrSupply2OperStatus.1.1
+            op: not_exists
       - oid: snChasPwrSupplyTable
         value: snChasPwrSupplyOperStatus
         descr: '{{ $snChasPwrSupplyDescription }}'
@@ -110,17 +110,17 @@ modules:
             graph: 0
             generic: 2
         skip_values:
-                - oid: snStackingGlobalConfigState.0
-                  op: "="
-                  value: 1
-                - oid: "SNMPv2-MIB::sysDescr.0"
-                  op: "~"
-                  value: "(Stacking System|Stack|FCX.*Stack)"
-                - oid: "SNMPv2-MIB::sysName.0"
-                  op: "~"
-                  value: "_stack$"
-                - oid: snChasPwrSupply2OperStatus.1.1
-                  op: exists
+          - oid: snStackingGlobalConfigState.0
+            op: "="
+            value: 1
+          - oid: "SNMPv2-MIB::sysDescr.0"
+            op: "~"
+            value: "(Stacking System|Stack|FCX.*Stack)"
+          - oid: "SNMPv2-MIB::sysName.0"
+            op: "~"
+            value: "_stack$"
+          - oid: snChasPwrSupply2OperStatus.1.1
+            op: exists
       - oid: snChasFan2Table
         # Stack-aware fan monitoring - monitors all stack units
         value: snChasFan2OperStatus
@@ -143,27 +143,27 @@ modules:
             graph: 0
             generic: 2
         skip_values:
-                -
-                  # Skip if stacking is NOT enabled (use standalone OIDs instead)
-                  # Check stack configuration state: 1=enabled, 0=disabled
-                  oid: snStackingGlobalConfigState.0
-                  op: '!='
-                  value: 1
-                -
-                  # Fallback: Skip if this does NOT appear to be a stacking system
-                  # Check sysDescr for stacking indicators
-                  oid: SNMPv2-MIB::sysDescr.0
-                  op: '!~'
-                  value: '(Stacking System|Stack|FCX.*Stack)'
-                -
-                  # Check sysName for stack patterns (e.g., hostname_stack)
-                  oid: SNMPv2-MIB::sysName.0
-                  op: '!~'
-                  value: '_stack$'
-                -
-                  # Alternative: Check if stack-aware hardware tables exist
-                  oid: snChasPwrSupply2OperStatus.1.1
-                  op: 'not_exists'
+          -
+            # Skip if stacking is NOT enabled (use standalone OIDs instead)
+            # Check stack configuration state: 1=enabled, 0=disabled
+            oid: snStackingGlobalConfigState.0
+            op: '!='
+            value: 1
+          -
+            # Fallback: Skip if this does NOT appear to be a stacking system
+            # Check sysDescr for stacking indicators
+            oid: SNMPv2-MIB::sysDescr.0
+            op: '!~'
+            value: '(Stacking System|Stack|FCX.*Stack)'
+          -
+            # Check sysName for stack patterns (e.g., hostname_stack)
+            oid: SNMPv2-MIB::sysName.0
+            op: '!~'
+            value: '_stack$'
+          -
+            # Alternative: Check if stack-aware hardware tables exist
+            oid: snChasPwrSupply2OperStatus.1.1
+            op: 'not_exists'
       - oid: snChasFanTable
         # Single switch fan monitoring (fallback for non-stacking)
         value: snChasFanOperStatus
@@ -186,183 +186,277 @@ modules:
             graph: 0
             generic: 2
         skip_values:
-                        -
-                            # Skip if stacking IS enabled (use stack-aware OIDs instead)
-                            # Check stack configuration state: 1=enabled, 0=disabled
-                            oid: snStackingGlobalConfigState.0
-                            op: '='
-                            value: 1
-                        -
-                            # Fallback: Skip if this appears to be a stacking system
-                            # Check sysDescr for stacking indicators
-                            oid: SNMPv2-MIB::sysDescr.0
-                            op: '~'
-                            value: '(Stacking System|Stack|FCX.*Stack)'
-                        -
-                            # Check sysName for stack patterns (e.g., hostname_stack)
-                            oid: SNMPv2-MIB::sysName.0
-                            op: '~'
-                            value: '_stack$'
-                        -
-                            # Alternative: Skip if stack-aware hardware tables exist
-                            oid: snChasPwrSupply2OperStatus.1.1
-                            op: 'exists'
-                - oid: snChasFanTable
-                  value: snChasFanOperStatus
-                  descr: '{{ $snChasFanDescription }}'
-                  group: "Fan Status"
-                  states:
-                    - {value: 1, descr: other, graph: 0, generic: 3}
-                    - {value: 2, descr: normal, graph: 1, generic: 0}
-                    - {value: 3, descr: failure, graph: 0, generic: 2}
-                - { oid: snStackingGlobalConfigState, value: snStackingGlobalConfigState, descr: 'Stack Configuration', group: 'Stack Status', states: [{ value: 0, descr: none, graph: 0, generic: 3 }, { value: 1, descr: enabled, graph: 1, generic: 0 }, { value: 2, descr: disabled, graph: 0, generic: 1 }] }
-                - oid: snStackingOperUnitTable
-                  value: snStackingOperUnitState
-                  descr: 'Unit {{ $index }} State'
-                  group: "Stack Status"
-                  states:
-                    - {value: 1, descr: local, graph: 1, generic: 0}
-                    - {value: 2, descr: remote, graph: 1, generic: 0}
-                    - {value: 3, descr: reserved, graph: 0, generic: 2}
-                    - {value: 4, descr: empty, graph: 0, generic: 2}
+          -
+            # Skip if stacking IS enabled (use stack-aware OIDs instead)
+            # Check stack configuration state: 1=enabled, 0=disabled
+            oid: snStackingGlobalConfigState.0
+            op: '='
+            value: 1
+          -
+            # Fallback: Skip if this appears to be a stacking system
+            # Check sysDescr for stacking indicators
+            oid: SNMPv2-MIB::sysDescr.0
+            op: '~'
+            value: '(Stacking System|Stack|FCX.*Stack)'
+          -
+            # Check sysName for stack patterns (e.g., hostname_stack)
+            oid: SNMPv2-MIB::sysName.0
+            op: '~'
+            value: '_stack$'
+          -
+            # Alternative: Skip if stack-aware hardware tables exist
+            oid: snChasPwrSupply2OperStatus.1.1
+            op: 'exists'
+      - oid: snChasFanTable
+        value: snChasFanOperStatus
+        descr: '{{ $snChasFanDescription }}'
+        group: "Fan Status"
+        states:
+          - value: 1
+            descr: other
+            graph: 0
+            generic: 3
+          - value: 2
+            descr: normal
+            graph: 1
+            generic: 0
+          - value: 3
+            descr: failure
+            graph: 0
+            generic: 2
+      - oid: snStackingGlobalConfigState
+        value: snStackingGlobalConfigState
+        descr: 'Stack Configuration'
+        group: 'Stack Status'
+        states:
+          - value: 0
+            descr: none
+            graph: 0
+            generic: 3
+          - value: 1
+            descr: enabled
+            graph: 1
+            generic: 0
+          - value: 2
+            descr: disabled
+            graph: 0
+            generic: 1
+      - oid: snStackingOperUnitTable
+        value: snStackingOperUnitState
+        descr: 'Unit {{ $index }} State'
+        group: "Stack Status"
+        states:
+          - value: 1
+            descr: local
+            graph: 1
+            generic: 0
+          - value: 2
+            descr: remote
+            graph: 1
+            generic: 0
+          - value: 3
+            descr: reserved
+            graph: 0
+            generic: 2
+          - value: 4
+            descr: empty
+            graph: 0
+            generic: 2
             skip_values:
-                    - oid: "SNMPv2-MIB::sysDescr.0"
-                      op: "!~"
-                      value: "Stacking System"
-                - oid: snStackingOperUnitTable
-                  value: snStackingOperUnitRole
-                  descr: 'Unit {{ $index }} Role'
-                  group: "Stack Status"
-                  states:
-                    - {value: 1, descr: other, graph: 0, generic: 3}
-                    - {value: 2, descr: active, graph: 1, generic: 0}
-                    - {value: 3, descr: standby, graph: 1, generic: 0}
-                    - {value: 4, descr: member, graph: 1, generic: 0}
-                    - {value: 5, descr: standalone, graph: 1, generic: 0}
-            skip_values:
-                    - oid: "SNMPv2-MIB::sysDescr.0"
-                      op: "!~"
-                      value: "Stacking System"
-                -
-                    oid: snStackingOperUnitTable
-                    value: snStackingOperUnitStackPort1State
-                    num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.8.{{ $index }}'
-                    descr: 'Unit {{ $index }} Stack Port 1'
-                    index: 'snStackingOperUnitStackPort1State.{{ $index }}'
+              - oid: "SNMPv2-MIB::sysDescr.0"
+                op: "!~"
+                value: "Stacking System"
+      - oid: snStackingOperUnitTable
+        value: snStackingOperUnitRole
+        descr: 'Unit {{ $index }} Role'
+        group: "Stack Status"
+        states:
+          - value: 1
+            descr: other
+            graph: 0
+            generic: 3
+          - value: 2
+            descr: active
+            graph: 1
+            generic: 0
+          - value: 3
+            descr: standby
+            graph: 1
+            generic: 0
+          - value: 4
+            descr: member
+            graph: 1
+            generic: 0
+          - value: 5
+            descr: standalone
+            graph: 1
+            generic: 0
         skip_values:
-                        -
-                            oid: SNMPv2-MIB::sysDescr.0
-                            op: '!~'
-                            value: 'Stacking System'
-                        -
-                            oid: snStackingOperUnitStackPort1
-                            op: '='
-                            value: 0
-                    group: Stack Ports
-                    state_name: snStackingOperUnitStackPortState
-                    states:
-                        - { value: 1, descr: other, graph: 0, generic: 3 }
-                        - { value: 2, descr: up, graph: 1, generic: 0 }
-                        - { value: 3, descr: down, graph: 0, generic: 2 }
-                - oid: snStackingOperUnitTable
-                  value: snStackingOperUnitStackPort2State
-                  descr: 'Unit {{ $index }} Stack Port 2'
-                  group: "Stack Ports"
-                  states:
-                    - {value: 1, descr: other, graph: 0, generic: 3}
-                    - {value: 2, descr: up, graph: 1, generic: 0}
-                    - {value: 3, descr: down, graph: 0, generic: 2}
-            skip_values:
-                    - oid: "SNMPv2-MIB::sysDescr.0"
-                      op: "!~"
-                      value: "Stacking System"
-                    - oid: snStackingOperUnitStackPort2
-                      op: "="
-                      value: 0
-                - oid: snAgentBrd2Table
-                  value: snAgentBrd2ModuleStatus
-                  descr: 'Unit {{ $snAgentBrd2Unit }}/{{ $snAgentBrd2Slot }}'
-                  group: "Module Status"
-                  states:
-                    - {value: 0, descr: moduleEmpty, graph: 0, generic: 2}
-                    - {value: 2, descr: moduleGoingDown, graph: 0, generic: 1}
-                    - {value: 3, descr: moduleRejected, graph: 0, generic: 2}
-                    - {value: 4, descr: moduleBad, graph: 0, generic: 2}
-                    - {value: 8, descr: moduleConfigured, graph: 1, generic: 0}
-                    - {value: 9, descr: moduleComingUp, graph: 0, generic: 1}
-                    - {value: 10, descr: moduleRunning, graph: 1, generic: 0}
-                    - {value: 11, descr: moduleBlocked, graph: 0, generic: 2}
-            skip_values:
-                    - oid: "SNMPv2-MIB::sysDescr.0"
-                      op: "!~"
-                      value: "Stacking System"
+          - oid: "SNMPv2-MIB::sysDescr.0"
+            op: "!~"
+            value: "Stacking System"
+      -
+        oid: snStackingOperUnitTable
+        value: snStackingOperUnitStackPort1State
+        num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.8.{{ $index }}'
+        descr: 'Unit {{ $index }} Stack Port 1'
+        index: 'snStackingOperUnitStackPort1State.{{ $index }}'
+        skip_values:
+          -
+            oid: SNMPv2-MIB::sysDescr.0
+            op: '!~'
+            value: 'Stacking System'
+          -
+            oid: snStackingOperUnitStackPort1
+            op: '='
+            value: 0
+        group: Stack Ports
+        state_name: snStackingOperUnitStackPortState
+        states:
+          - value: 1
+            descr: other
+            graph: 0
+            generic: 3
+          - value: 2
+            descr: up
+            graph: 1
+            generic: 0
+          - value: 3
+            descr: down
+            graph: 0
+            generic: 2
+      - oid: snStackingOperUnitTable
+        value: snStackingOperUnitStackPort2State
+        descr: 'Unit {{ $index }} Stack Port 2'
+        group: "Stack Ports"
+        states:
+          - value: 1
+            descr: other
+            graph: 0
+            generic: 3
+          - value: 2
+            descr: up
+            graph: 1
+            generic: 0
+          - value: 3
+            descr: down
+            graph: 0
+            generic: 2
+        skip_values:
+          - oid: "SNMPv2-MIB::sysDescr.0"
+            op: "!~"
+            value: "Stacking System"
+          - oid: snStackingOperUnitStackPort2
+            op: "="
+            value: 0
+      - oid: snAgentBrd2Table
+        value: snAgentBrd2ModuleStatus
+        descr: 'Unit {{ $snAgentBrd2Unit }}/{{ $snAgentBrd2Slot }}'
+        group: "Module Status"
+        states:
+          - value: 0
+            descr: moduleEmpty
+            graph: 0
+            generic: 2
+          - value: 2
+            descr: moduleGoingDown
+            graph: 0
+            generic: 1
+          - value: 3
+            descr: moduleRejected
+            graph: 0
+            generic: 2
+          - value: 4
+            descr: moduleBad
+            graph: 0
+            generic: 2
+          - value: 8
+            descr: moduleConfigured
+            graph: 1
+            generic: 0
+          - value: 9
+            descr: moduleComingUp
+            graph: 0
+            generic: 1
+          - value: 10
+            descr: moduleRunning
+            graph: 1
+            generic: 0
+          - value: 11
+            descr: moduleBlocked
+            graph: 0
+            generic: 2
+        skip_values:
+          - oid: "SNMPv2-MIB::sysDescr.0"
+            op: "!~"
+            value: "Stacking System"
 
 # Brocade FCX/ICX Stacking Switches
 discovery_modules:
-    # Core modules
-    os: true
-    ports: true
-    ports-stack: true
-    sensors: true
-    mempools: true
-    processors: true
-    # Network protocols
-    stp: true
-    vlans: true
-    # Address management
-    ipv4-addresses: true
-    ipv6-addresses: true
-    fdb-table: true
-    # Disabled modules (not applicable to FCX/ICX)
-    bgp: false
-    cisco-cef: false
-    cisco-mac-accounting: false
-    cisco-otv: false
-    cisco-pw: false
-    cisco-vrf-lite: false
-    discovery-arp: false
-    discovery-protocols: false
-    entity-state: false
-    entity-physical: false
-    hr-device: false
-    hr-mib: false
-    lldp: false
-    ospf: false
-    ospfv3: false
-    slas: false
-    storage: false
-    vrf: false
-    netstats: false
-    transceivers: false
+  # Core modules
+  os: true
+  ports: true
+  ports-stack: true
+  sensors: true
+  mempools: true
+  processors: true
+  # Network protocols
+  stp: true
+  vlans: true
+  # Address management
+  ipv4-addresses: true
+  ipv6-addresses: true
+  fdb-table: true
+  # Disabled modules (not applicable to FCX/ICX)
+  bgp: false
+  cisco-cef: false
+  cisco-mac-accounting: false
+  cisco-otv: false
+  cisco-pw: false
+  cisco-vrf-lite: false
+  discovery-arp: false
+  discovery-protocols: false
+  entity-state: false
+  entity-physical: false
+  hr-device: false
+  hr-mib: false
+  lldp: false
+  ospf: false
+  ospfv3: false
+  slas: false
+  storage: false
+  vrf: false
+  netstats: false
+  transceivers: false
 
 
 poller_modules:
-    # Core modules
-    availability: true
-    os: true
-    ports: true
-    sensors: true
-    stp: true
-    netstats: true
-    # Disabled modules (not applicable to FCX/ICX)
-    bgp: false
-    cisco-cef: false
-    cisco-mac-accounting: false
-    cisco-otv: false
-    cisco-pw: false
-    cisco-vrf-lite: false
-    discovery-arp: false
-    discovery-protocols: false
-    entity-state: false
-    entity-physical: false
-    hr-device: false
-    hr-mib: false
-    lldp: false
-    ospf: false
-    ospfv3: false
-    slas: false
-    storage: false
-    vrf: false
-    transceivers: false
+  # Core modules
+  availability: true
+  os: true
+  ports: true
+  sensors: true
+  stp: true
+  netstats: true
+  # Disabled modules (not applicable to FCX/ICX)
+  bgp: false
+  cisco-cef: false
+  cisco-mac-accounting: false
+  cisco-otv: false
+  cisco-pw: false
+  cisco-vrf-lite: false
+  discovery-arp: false
+  discovery-protocols: false
+  entity-state: false
+  entity-physical: false
+  hr-device: false
+  hr-mib: false
+  lldp: false
+  ospf: false
+  ospfv3: false
+  slas: false
+  storage: false
+  vrf: false
+  transceivers: false
 
 stackable: true
