@@ -7,13 +7,8 @@
  * Covers: FastIron (FCX, FWS, FLS, etc.) and ICX series — shared MIBs and discovery.
  * Enhanced stack topology discovery and per-unit inventory for both platforms.
  *
- * This class extends the custom Foundry base class (LibreNMS\OS\Shared\Foundry)
- * which provides CPU discovery functionality. Note: This Foundry class is
- * custom to this project and does not exist in the official LibreNMS repository.
- *
- * CRITICAL ISSUE: Stack MIBs don't work on actual stacked switches!
- * Both ICX6450 (2-stack) and FCX648 (6-stack) show snStackMemberCount=1
- * and "No Such Instance" for all stack member table queries.
+ * This class extends the Foundry base class (LibreNMS\OS\Shared\Foundry)
+ * which provides CPU discovery functionality using FOUNDRY-SN-AGENT-MIB.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
