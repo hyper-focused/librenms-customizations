@@ -104,10 +104,7 @@ modules:
                 - oid: snChasPwrSupply2OperStatus.1.1
                   op: exists
                 -
-                    # Fan monitoring - Stack-aware version (WORKS on IronWare 08.0.30uT7f1!)
-                    # Index format: unit.fan (e.g., 1.1 = unit 1 fan 1, 2.1 = unit 2 fan 1)
-                    # Table: snChasFan2Table (.1.3.6.1.4.1.1991.1.1.1.3.2) - stack-wide fan data
-                    # Provides monitoring for ALL 6 stack units on your FCX648!
+                    # Stack-aware fan monitoring - monitors all stack units
                     oid: snChasFan2Table
                     value: snChasFan2OperStatus
                     num_oid: '.1.3.6.1.4.1.1991.1.1.1.3.2.1.4.{{ $index }}'
@@ -142,9 +139,7 @@ modules:
                             oid: snChasPwrSupply2OperStatus.1.1
                             op: 'not_exists'
                 -
-                    # Fan monitoring - Single switch version (fallback for non-stacking)
-                    # Index format: fan (e.g., 1 = fan 1) - single unit only
-                    # Table: snChasFanTable (.1.3.6.1.4.1.1991.1.1.1.3.1) - single unit data
+                    # Single switch fan monitoring (fallback for non-stacking)
                     oid: snChasFanTable
                     value: snChasFanOperStatus
                     num_oid: '.1.3.6.1.4.1.1991.1.1.1.3.1.1.3.{{ $index }}'
@@ -268,62 +263,37 @@ modules:
                       op: "!~"
                       value: "Stacking System"
 
-# Layer 2 switch with light L3 support - FCX648 tested
+# Brocade FCX/ICX Stack - Layer 2 switch with light L3 support
 discovery_modules:
-    # Core monitoring (all working on FCX648)
-    os: true               # ✓ Working
-    ports: true            # ✓ Working (found interfaces)
-    ports-stack: true      # ✓ Working (found stack status)
-    sensors: true          # ✓ Working (returned temp data, but PHP errors)
-    mempools: true         # ✓ Working (found board descriptions)
-    processors: true       # ✓ Working (found CPU table)
+    # Core monitoring
+    os: true
+    ports: true
+    ports-stack: true
+    sensors: true
+    mempools: true
+    processors: true
     # Network protocols
-    lldp: false            # ❌ No Such Object on FCX648
-    stp: true              # ✓ Working (found STP data)
-    vlans: true            # ✓ Working (found VLAN data)
+    stp: true
+    vlans: true
     # Address management
-    ipv4-addresses: true   # ✓ Working (ran IP queries)
-    ipv6-addresses: true   # ✓ Working (ran IP table query)
-    fdb-table: true        # ✓ Working (ran SQL queries)
-    route: false           # ❌ No Such Object on FCX648
-    # Additional modules (enabled for testing)
-    transceivers: true     # ? Enabled (needs poller verification)
-    entity-state: true     # ✓ Working (ran SQL queries)
-    hr-mib: true           # ? Enabled (needs verification)
-    netstats: true         # ? Enabled (needs verification)
-    # Disabled modules
-    arp-table: false
-    bgp: false
-    cisco-cef: false
-    cisco-mac-accounting: false
-    cisco-otv: false
-    cisco-pw: false
-    cisco-vrf-lite: false
-    discovery-arp: false
-    discovery-protocols: false
-    entity-physical: false  # FCX/ICX lack ENTITY-MIB
-    entity-state: false
-    hr-device: false   # Host resources (server-focused)
-    ospf: false
-    ospfv3: false
-    slas: false        # Service level agreements
-    storage: false     # Disk/storage monitoring
-    vrf: false         # Virtual routing/forwarding
+    ipv4-addresses: true
+    ipv6-addresses: true
+    fdb-table: true
+    # Transceiver monitoring (if available)
+    transceivers: true
 
 poller_modules:
-    # Working poller modules on FCX648 (based on actual polling)
-    availability: true     # ✓ Working
-    os: true               # ✓ Working
-    ports: true            # ✓ Working (polling interface data)
-    sensors: true          # ✓ Working
-    stp: true              # ✓ Working (returned bridge data)
-    entity-state: true     # ✓ Working
-    netstats: true         # ✓ Working (returned ICMP data)
-    # Disabled modules (not working on FCX648)
-    entity-physical: false # ❌ No ENTITY-MIB on FCX/ICX devices
-    lldp: false            # ❌ No LLDP support on FCX648
-    hr-mib: false          # ❌ No Such Object for HR MIB queries
-    ntp: false             # ❌ Not tested/required
-    # All other poller modules disabled
+    # Core polling
+    availability: true
+    os: true
+    ports: true
+    sensors: true
+    stp: true
+    netstats: true
+    # Disabled modules (not supported on FCX/ICX)
+    entity-physical: false  # No ENTITY-MIB support
+    lldp: false             # No LLDP support
+    hr-mib: false           # No HR MIB support
+
 
 stackable: true
