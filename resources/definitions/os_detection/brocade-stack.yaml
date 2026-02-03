@@ -38,15 +38,12 @@ discovery:
     -
         # FastIron Stackable Switches (standalone mode detection)
         # These switches can stack but may be detected as standalone
-        sysDescr:
-            - 'FCX'  # FCX Family
-            - 'FWS'  # FWS Workgroup Series
-            - 'FLS'  # FLS Layer 2 Series
+        # OID-based detection for FCX, FWS, FLS families
         sysObjectID:
+            - .1.3.6.1.4.1.1991.1.3.45  # FGS/FWS Family OID
+            - .1.3.6.1.4.1.1991.1.3.46  # FLS Family OID
             - .1.3.6.1.4.1.1991.1.3.48  # Stackable OID (when stacking enabled)
             - .1.3.6.1.4.1.1991.1.3.54  # FCX Family standalone OID
-            - .1.3.6.1.4.1.1991.1.3.46  # FLS Family OID
-            - .1.3.6.1.4.1.1991.1.3.45  # FGS/FWS Family OID
     -
         # Generic FastIron/IronWare fallback
         # Catches any remaining FastIron devices not covered above
