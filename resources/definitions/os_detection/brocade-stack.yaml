@@ -13,7 +13,7 @@ over:
     - { graph: device_bits, text: 'Device Traffic' }
     - { graph: device_processor, text: 'CPU Usage' }
     - { graph: device_mempool, text: 'Memory Usage' }
-mib_dir: foundry
+mib_dir: brocade
 discovery:
     -
         # Primary: Stacking System in sysDescr (FastIron + ICX)
@@ -25,15 +25,48 @@ discovery:
     -
         # FastIron/IronWare without "Stacking System" (e.g. standalone FWS/FLS/FCX)
         sysDescr:
-            - IronWare
-        sysObjectID:
-            - .1.3.6.1.4.1.1991.1.3
-    -
-        # Brocade enterprise (ICX, newer firmware)
-        sysDescr:
             - FastIron
         sysObjectID:
-            - .1.3.6.1.4.1.1588.2.1.1.1.3
+            - .1.3.6.1.4.1.1991.1.3
+
+# Skip conditions - prevent incorrect detection of routing switches
+skip_values:
+    -
+        # Skip NetIron routing switches
+        oid: SNMPv2-MIB::sysDescr.0
+        op: '~'
+        value: 'NetIron'
+    -
+        # Skip MLX series routing switches
+        oid: SNMPv2-MIB::sysDescr.0
+        op: '~'
+        value: 'MLX'
+    -
+        # Skip XMR series routing switches
+        oid: SNMPv2-MIB::sysDescr.0
+        op: '~'
+        value: 'XMR'
+    -
+        # Skip BigIron chassis routing switches
+        oid: SNMPv2-MIB::sysDescr.0
+        op: '~'
+        value: 'BigIron'
+    -
+        # Skip TurboIron routing switches
+        oid: SNMPv2-MIB::sysDescr.0
+        op: '~'
+        value: 'TurboIron'
+    -
+        # Skip CES carrier ethernet switches
+        oid: SNMPv2-MIB::sysDescr.0
+        op: '~'
+        value: 'CES'
+    #  - Brocade enterprise not needed - fabric switch OID's only
+        # Brocade enterprise (ICX, newer firmware)
+        # sysDescr:
+        #     - FastIron
+        # sysObjectID:
+        #     - .1.3.6.1.4.1.1588.2.1.1.1.3
 
 oids:
     no_bulk:
