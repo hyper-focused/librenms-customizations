@@ -1,7 +1,7 @@
 # Brocade Stack OS Detection
 # Single unified module: FastIron (FCX, FWS, FLS, etc.) + ICX stackable switches
 # FastIron: FCX, FWS, FLS — IronWare/FastIron OS, enterprise 1991
-# ICX: 6430/6450/6610/6650/7150/7250/7450/7650/7750 — FastIron OS, enterprise 1991/1588
+# ICX: 6430/6450/6610/6650/7150/7250/7450/7650/7750 — FastIron OS, enterprise 1991 (OID-based detection)
 # Optional future: TurboIron if synergies exist (else in routing/modular project)
 
 os: brocade-stack
@@ -23,20 +23,41 @@ discovery:
         sysObjectID:
             - .1.3.6.1.4.1.1991.1.3.48  # Foundry/Brocade stackable OID
     -
-        # ICX Stackable Switches - All under FOUNDRY-SN-ROOT-MIB
-        sysDescr:
-            - 'ICX'
-            - 'ICX6430'
-            - 'ICX6450'
-            - 'ICX6610'
-            - 'ICX6650'
-            - 'ICX7150'
-            - 'ICX7250'
-            - 'ICX7450'
-            - 'ICX7650'
-            - 'ICX7750'
+        # ICX6610 Family - OID-based detection
         sysObjectID:
-            - .1.3.6.1.4.1.1991.1.3.48  # ICX stackable under Foundry enterprise
+            - .1.3.6.1.4.1.1991.1.3.56  # ICX6610 family
+    -
+        # ICX6430 Family - OID-based detection
+        sysObjectID:
+            - .1.3.6.1.4.1.1991.1.3.57  # ICX6430 family
+    -
+        # ICX6450 Family - OID-based detection
+        sysObjectID:
+            - .1.3.6.1.4.1.1991.1.3.58  # ICX6450 family
+    -
+        # ICX6650 Family - OID-based detection
+        sysObjectID:
+            - .1.3.6.1.4.1.1991.1.3.59  # ICX6650 family
+    -
+        # ICX7150 Family - OID-based detection
+        sysObjectID:
+            - .1.3.6.1.4.1.1991.1.3.64  # ICX7150 family
+    -
+        # ICX7250 Family - OID-based detection
+        sysObjectID:
+            - .1.3.6.1.4.1.1991.1.3.62  # ICX7250 family
+    -
+        # ICX7450 Family - OID-based detection
+        sysObjectID:
+            - .1.3.6.1.4.1.1991.1.3.61  # ICX7450 family
+    -
+        # ICX7650 Family - OID-based detection
+        sysObjectID:
+            - .1.3.6.1.4.1.1991.1.3.65  # ICX7650 family
+    -
+        # ICX7750 Family - OID-based detection
+        sysObjectID:
+            - .1.3.6.1.4.1.1991.1.3.60  # ICX7750 family
     -
         # FastIron Stackable Switches (standalone mode detection)
         # These switches can stack but may be detected as standalone
