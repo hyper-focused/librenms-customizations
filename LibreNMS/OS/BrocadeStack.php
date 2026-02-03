@@ -365,8 +365,8 @@ class BrocadeStack extends Foundry
             'stackTable' => '.1.3.6.1.4.1.1991.1.1.2.1.2',
             'stackPortTable' => '.1.3.6.1.4.1.1991.1.1.2.1.4',
 
-            // Try Brocade-specific enterprise OIDs
-            'brocadeStackInfo' => '.1.3.6.1.4.1.1588.2.1.1.1',
+            // Try alternative Foundry enterprise OIDs
+            'foundryStackInfo' => '.1.3.6.1.4.1.1991.1.1.2.1.1',
         ];
 
         foreach ($alternativeOIDs as $name => $oid) {
