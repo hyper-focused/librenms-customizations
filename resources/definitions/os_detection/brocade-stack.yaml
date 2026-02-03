@@ -53,3 +53,72 @@ register_mibs:
     - FOUNDRY-SN-AGENT-MIB
     - FOUNDRY-SN-SWITCH-GROUP-MIB
     - FOUNDRY-SN-STACKING-MIB
+
+# Brocade FCX/ICX Stacking Switches
+discovery_modules:
+  # Core modules
+  os: true
+  ports: true
+  ports-stack: true
+  sensors: true
+  mempools: true
+  processors: true
+  # Network protocols
+  stp: true
+  vlans: true
+  # Address management
+  ipv4-addresses: true
+  ipv6-addresses: true
+  fdb-table: true
+  # Disabled modules (not applicable to FCX/ICX)
+  bgp: false
+  cisco-cef: false
+  cisco-mac-accounting: false
+  cisco-otv: false
+  cisco-pw: false
+  cisco-vrf-lite: false
+  discovery-arp: false
+  discovery-protocols: false
+  entity-state: false
+  entity-physical: false
+  hr-device: false
+  hr-mib: false
+  lldp: false
+  ospf: false
+  ospfv3: false
+  slas: false
+  storage: false
+  vrf: false
+  netstats: false
+  transceivers: false
+
+poller_modules:
+  # Core modules
+  availability: true
+  os: true
+  ports: true
+  sensors: true
+  stp: true
+  netstats: true
+  # Disabled modules (not applicable to FCX/ICX)
+  bgp: false
+  cisco-cef: false
+  cisco-mac-accounting: false
+  cisco-otv: false
+  cisco-pw: false
+  cisco-vrf-lite: false
+  discovery-arp: false
+  discovery-protocols: false
+  entity-state: false
+  entity-physical: false
+  hr-device: false
+  hr-mib: false
+  lldp: false
+  ospf: false
+  ospfv3: false
+  slas: false
+  storage: false
+  vrf: false
+  transceivers: false
+
+stackable: true
