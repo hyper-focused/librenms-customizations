@@ -38,6 +38,7 @@ use LibreNMS\Component;
 use LibreNMS\Device\Processor;
 use LibreNMS\Interfaces\Discovery\ProcessorDiscovery;
 use LibreNMS\OS;
+use LibreNMS\Util\Mac;
 
 class BrocadeStack extends OS implements ProcessorDiscovery
 {
@@ -594,20 +595,18 @@ class BrocadeStack extends OS implements ProcessorDiscovery
         $memberCount = count($configMembers);
         $topologyValue = $topologyValue ?? 3;
 
-        // Create topology record (caller already fetched topology/mac)
-        BrocadeStackTopology::updateOrCreate(
-            ['device_id' => $device->device_id],
-            [
-                'topology' => $this->mapTopologyValue($topologyValue),
-                'unit_count' => $memberCount,
-                'master_unit' => 1, // Assume first unit is master in config
-                'stack_mac' => $stackMac,
-            ]
-        );
+        // Store topology data in device_attribs (replacing old database approach)
+        $topologyData = [
+            'topology' => $this->mapTopologyValue($topologyValue),
+            'unit_count' => $memberCount,
+            'master_unit' => 1, // Assume first unit is master in config
+            'stack_mac' => $stackMac,
+            'members' => []
+        ];
 
         // Process each configured member
         foreach ($configMembers as $unitId => $member) {
-            $memberData = [
+            $topologyData['members'][$unitId] = [
                 'role' => 'member', // Config table doesn't specify roles clearly
                 'state' => 'active', // Assume configured units are active
                 'serial_number' => null, // Config table may not have serials
@@ -616,15 +615,10 @@ class BrocadeStack extends OS implements ProcessorDiscovery
                 'mac_address' => null,
                 'priority' => $member['snStackingConfigUnitPriority'] ?? 128,
             ];
-
-            IronwareStackMember::updateOrCreate(
-                [
-                    'device_id' => $device->device_id,
-                    'unit_id' => $unitId,
-                ],
-                $memberData
-            );
         }
+
+        // Store in device_attribs
+        $device->setAttrib('brocade_stack_topology', json_encode($topologyData));
 
         // Update component for display
         $this->updateStackComponent($device, $this->mapTopologyValue($topologyValue), 1, $configMembers, $memberCount);
@@ -797,5 +791,77 @@ class BrocadeStack extends OS implements ProcessorDiscovery
         }
 
         return $processors;
+    }
+
+    /**
+     * Get unit serial number
+     *
+     * @param Device $device
+     * @param int $unitId
+     * @return string|null
+     */
+    private function getUnitSerial(Device $device, int $unitId): ?string
+    {
+        $serialQuery = \SnmpQuery::get("FOUNDRY-SN-AGENT-MIB::snChasUnitSerNum.{$unitId}");
+        return $serialQuery->value();
+    }
+
+    /**
+     * Get unit model/description
+     *
+     * @param Device $device
+     * @param int $unitId
+     * @return string|null
+     */
+    private function getUnitModel(Device $device, int $unitId): ?string
+    {
+        $modelQuery = \SnmpQuery::get("FOUNDRY-SN-AGENT-MIB::snChasUnitDescription.{$unitId}");
+        return $modelQuery->value();
+    }
+
+    /**
+     * Get unit firmware version
+     *
+     * @param Device $device
+     * @param int $unitId
+     * @return string|null
+     */
+    private function getUnitVersion(Device $device, int $unitId): ?string
+    {
+        // Try to get version from various OIDs
+        $versionOids = [
+            "FOUNDRY-SN-AGENT-MIB::snAgentBrdSoftwareVer.{$unitId}",
+            "FOUNDRY-SN-AGENT-MIB::snAgImgVer.0",  // Global version as fallback
+        ];
+
+        foreach ($versionOids as $oid) {
+            $versionQuery = \SnmpQuery::get($oid);
+            $version = $versionQuery->value();
+            if ($version !== null) {
+                return $version;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Get unit MAC address
+     *
+     * @param Device $device
+     * @param int $unitId
+     * @return string|null
+     */
+    private function getUnitMac(Device $device, int $unitId): ?string
+    {
+        $macQuery = \SnmpQuery::get("FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingOperUnitMac.{$unitId}");
+        $mac = $macQuery->value();
+
+        if ($mac !== null) {
+            // Convert to standard MAC format if needed
+            return Mac::parse($mac)->hex();
+        }
+
+        return null;
     }
 }
