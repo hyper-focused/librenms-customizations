@@ -26,4 +26,12 @@ modules:
     temperature: {data: []}
     load: {data: []}
   state:
-    data: []
+    data:
+      - oid: snChasPwrSupplyTable
+        value: snChasPwrSupplyOperStatus
+        descr: 'Power Supply'
+        group: "Power Supply"
+        states:
+          - { value: 1, descr: other, graph: 0, generic: 3 }
+          - { value: 2, descr: normal, graph: 1, generic: 0 }
+          - { value: 3, descr: failure, graph: 0, generic: 2 }
