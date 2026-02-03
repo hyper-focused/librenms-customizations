@@ -22,7 +22,7 @@ modules:
         descr: '{{ snAgentBrdMainBrdDescription }}'
   os:
     hardware_mib: FOUNDRY-SN-ROOT-MIB
-    sysDescr_regex: '/(?:IronWare|FastIron) Version (?<version>[\d.]+[a-zA-Z0-9]*)/i'
+    sysDescr_regex: '/(?:IronWare|FastIron) Version (?<version>[\d.]+[a-zA-Z0-9]*)/'
     hardware: [snChasUnitDescription.1]
     hardware_regex: '/(?:FCX|FWS|FLS|ICX)\d*[A-Z0-9-]*/i'
     serial: snChasSerNum.0
@@ -61,17 +61,26 @@ modules:
         - oid: snAgentCpuUtilTable
           value: snAgentCpuUtilPercent
           descr: 'CPU {{ $index }}'
-    state:
-          data:
-            - oid: snChasPwrSupply2Table
-              value: snChasPwrSupply2OperStatus
-              descr: 'Unit {{ $snChasPwrSupply2Unit }}'
-              group: "Power Supply"
-              states:
-                - {value: 1, descr: other, graph: 0, generic: 3}
-                - {value: 2, descr: normal, graph: 1, generic: 0}
-                - {value: 3, descr: failure, graph: 0, generic: 2}
-              skip_values:
+  state:
+    data:
+      - oid: snChasPwrSupply2Table
+        value: snChasPwrSupply2OperStatus
+        descr: 'Unit {{ $snChasPwrSupply2Unit }}'
+        group: "Power Supply"
+        states:
+          - value: 1
+            descr: other
+            graph: 0
+            generic: 3
+          - value: 2
+            descr: normal
+            graph: 1
+            generic: 0
+          - value: 3
+            descr: failure
+            graph: 0
+            generic: 2
+        skip_values:
                 - oid: snStackingGlobalConfigState.0
                   op: "!="
                   value: 1
@@ -83,15 +92,24 @@ modules:
                   value: "_stack$"
                 - oid: snChasPwrSupply2OperStatus.1.1
                   op: not_exists
-            - oid: snChasPwrSupplyTable
-              value: snChasPwrSupplyOperStatus
-              descr: '{{ $snChasPwrSupplyDescription }}'
-              group: "Power Supply"
-              states:
-                - {value: 1, descr: other, graph: 0, generic: 3}
-                - {value: 2, descr: normal, graph: 1, generic: 0}
-                - {value: 3, descr: failure, graph: 0, generic: 2}
-              skip_values:
+      - oid: snChasPwrSupplyTable
+        value: snChasPwrSupplyOperStatus
+        descr: '{{ $snChasPwrSupplyDescription }}'
+        group: "Power Supply"
+        states:
+          - value: 1
+            descr: other
+            graph: 0
+            generic: 3
+          - value: 2
+            descr: normal
+            graph: 1
+            generic: 0
+          - value: 3
+            descr: failure
+            graph: 0
+            generic: 2
+        skip_values:
                 - oid: snStackingGlobalConfigState.0
                   op: "="
                   value: 1
@@ -103,55 +121,71 @@ modules:
                   value: "_stack$"
                 - oid: snChasPwrSupply2OperStatus.1.1
                   op: exists
+      - oid: snChasFan2Table
+        # Stack-aware fan monitoring - monitors all stack units
+        value: snChasFan2OperStatus
+        num_oid: '.1.3.6.1.4.1.1991.1.1.1.3.2.1.4.{{ $index }}'
+        descr: 'Unit {{ $snChasFan2Unit }} {{ $snChasFan2Description }}'
+        index: 'snChasFan2OperStatus.{{ $index }}'
+        group: Fan Status
+        state_name: snChasFan2OperStatus
+        states:
+          - value: 1
+            descr: other
+            graph: 0
+            generic: 3
+          - value: 2
+            descr: normal
+            graph: 1
+            generic: 0
+          - value: 3
+            descr: failure
+            graph: 0
+            generic: 2
+        skip_values:
                 -
-                    # Stack-aware fan monitoring - monitors all stack units
-                    oid: snChasFan2Table
-                    value: snChasFan2OperStatus
-                    num_oid: '.1.3.6.1.4.1.1991.1.1.1.3.2.1.4.{{ $index }}'
-                    descr: 'Unit {{ $snChasFan2Unit }} {{ $snChasFan2Description }}'
-                    index: 'snChasFan2OperStatus.{{ $index }}'
-                    group: Fan Status
-                    state_name: snChasFan2OperStatus
-                    states:
-                        - { value: 1, descr: other, graph: 0, generic: 3 }
-                        - { value: 2, descr: normal, graph: 1, generic: 0 }
-                        - { value: 3, descr: failure, graph: 0, generic: 2 }
-                    skip_values:
-                        -
-                            # Skip if stacking is NOT enabled (use standalone OIDs instead)
-                            # Check stack configuration state: 1=enabled, 0=disabled
-                            oid: snStackingGlobalConfigState.0
-                            op: '!='
-                            value: 1
-                        -
-                            # Fallback: Skip if this does NOT appear to be a stacking system
-                            # Check sysDescr for stacking indicators
-                            oid: SNMPv2-MIB::sysDescr.0
-                            op: '!~'
-                            value: '(Stacking System|Stack|FCX.*Stack)'
-                        -
-                            # Check sysName for stack patterns (e.g., hostname_stack)
-                            oid: SNMPv2-MIB::sysName.0
-                            op: '!~'
-                            value: '_stack$'
-                        -
-                            # Alternative: Check if stack-aware hardware tables exist
-                            oid: snChasPwrSupply2OperStatus.1.1
-                            op: 'not_exists'
+                  # Skip if stacking is NOT enabled (use standalone OIDs instead)
+                  # Check stack configuration state: 1=enabled, 0=disabled
+                  oid: snStackingGlobalConfigState.0
+                  op: '!='
+                  value: 1
                 -
-                    # Single switch fan monitoring (fallback for non-stacking)
-                    oid: snChasFanTable
-                    value: snChasFanOperStatus
-                    num_oid: '.1.3.6.1.4.1.1991.1.1.1.3.1.1.3.{{ $index }}'
-                    descr: '{{ $snChasFanDescription }}'
-                    index: 'snChasFanOperStatus.{{ $index }}'
-                    group: Fan Status
-                    state_name: snChasFanOperStatus
-                    states:
-                        - { value: 1, descr: other, graph: 0, generic: 3 }
-                        - { value: 2, descr: normal, graph: 1, generic: 0 }
-                        - { value: 3, descr: failure, graph: 0, generic: 2 }
-                    skip_values:
+                  # Fallback: Skip if this does NOT appear to be a stacking system
+                  # Check sysDescr for stacking indicators
+                  oid: SNMPv2-MIB::sysDescr.0
+                  op: '!~'
+                  value: '(Stacking System|Stack|FCX.*Stack)'
+                -
+                  # Check sysName for stack patterns (e.g., hostname_stack)
+                  oid: SNMPv2-MIB::sysName.0
+                  op: '!~'
+                  value: '_stack$'
+                -
+                  # Alternative: Check if stack-aware hardware tables exist
+                  oid: snChasPwrSupply2OperStatus.1.1
+                  op: 'not_exists'
+      - oid: snChasFanTable
+        # Single switch fan monitoring (fallback for non-stacking)
+        value: snChasFanOperStatus
+        num_oid: '.1.3.6.1.4.1.1991.1.1.1.3.1.1.3.{{ $index }}'
+        descr: '{{ $snChasFanDescription }}'
+        index: 'snChasFanOperStatus.{{ $index }}'
+        group: Fan Status
+        state_name: snChasFanOperStatus
+        states:
+          - value: 1
+            descr: other
+            graph: 0
+            generic: 3
+          - value: 2
+            descr: normal
+            graph: 1
+            generic: 0
+          - value: 3
+            descr: failure
+            graph: 0
+            generic: 2
+        skip_values:
                         -
                             # Skip if stacking IS enabled (use stack-aware OIDs instead)
                             # Check stack configuration state: 1=enabled, 0=disabled
@@ -191,7 +225,7 @@ modules:
                     - {value: 2, descr: remote, graph: 1, generic: 0}
                     - {value: 3, descr: reserved, graph: 0, generic: 2}
                     - {value: 4, descr: empty, graph: 0, generic: 2}
-                  skip_values:
+            skip_values:
                     - oid: "SNMPv2-MIB::sysDescr.0"
                       op: "!~"
                       value: "Stacking System"
@@ -205,7 +239,7 @@ modules:
                     - {value: 3, descr: standby, graph: 1, generic: 0}
                     - {value: 4, descr: member, graph: 1, generic: 0}
                     - {value: 5, descr: standalone, graph: 1, generic: 0}
-                  skip_values:
+            skip_values:
                     - oid: "SNMPv2-MIB::sysDescr.0"
                       op: "!~"
                       value: "Stacking System"
@@ -215,7 +249,7 @@ modules:
                     num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.8.{{ $index }}'
                     descr: 'Unit {{ $index }} Stack Port 1'
                     index: 'snStackingOperUnitStackPort1State.{{ $index }}'
-                    skip_values:
+        skip_values:
                         -
                             oid: SNMPv2-MIB::sysDescr.0
                             op: '!~'
@@ -238,7 +272,7 @@ modules:
                     - {value: 1, descr: other, graph: 0, generic: 3}
                     - {value: 2, descr: up, graph: 1, generic: 0}
                     - {value: 3, descr: down, graph: 0, generic: 2}
-                  skip_values:
+            skip_values:
                     - oid: "SNMPv2-MIB::sysDescr.0"
                       op: "!~"
                       value: "Stacking System"
@@ -258,7 +292,7 @@ modules:
                     - {value: 9, descr: moduleComingUp, graph: 0, generic: 1}
                     - {value: 10, descr: moduleRunning, graph: 1, generic: 0}
                     - {value: 11, descr: moduleBlocked, graph: 0, generic: 2}
-                  skip_values:
+            skip_values:
                     - oid: "SNMPv2-MIB::sysDescr.0"
                       op: "!~"
                       value: "Stacking System"
