@@ -263,37 +263,30 @@ modules:
                       op: "!~"
                       value: "Stacking System"
 
-# Brocade FCX/ICX Stack - Layer 2 switch with light L3 support
+# Brocade FCX/ICX Stacking Switches 
 discovery_modules:
-    # Core monitoring
     os: true
     ports: true
     ports-stack: true
     sensors: true
     mempools: true
     processors: true
-    # Network protocols
     stp: true
     vlans: true
-    # Address management
     ipv4-addresses: true
     ipv6-addresses: true
     fdb-table: true
-    # Transceiver monitoring (if available)
-    transceivers: true
+
 
 poller_modules:
-    # Core polling
     availability: true
     os: true
     ports: true
     sensors: true
     stp: true
     netstats: true
-    # Disabled modules (not supported on FCX/ICX)
     entity-physical: false  # No ENTITY-MIB support
     lldp: false             # No LLDP support
     hr-mib: false           # No HR MIB support
-
 
 stackable: true
