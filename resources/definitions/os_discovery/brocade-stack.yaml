@@ -3,59 +3,6 @@
 # Shared MIBs and logic for both platforms; stack-aware per-unit discovery
 ---
 mib: FOUNDRY-SN-AGENT-MIB:FOUNDRY-SN-SWITCH-GROUP-MIB:FOUNDRY-SN-STACKING-MIB:Brocade-REG-MIB:FOUNDRY-SN-ROOT-MIB
-
-# Global skip conditions - prevent this discovery from applying to non-stackable devices
-skip_values:
-    -
-        # Skip NetIron routing switches (layer 3 focus, not stackable)
-        oid: SNMPv2-MIB::sysDescr.0
-        op: '~'
-        value: 'NetIron'
-    -
-        # Skip MLX series (modular routing switches)
-        oid: SNMPv2-MIB::sysDescr.0
-        op: '~'
-        value: 'MLX'
-    -
-        # Skip XMR series (high-end routing)
-        oid: SNMPv2-MIB::sysDescr.0
-        op: '~'
-        value: 'XMR'
-    -
-        # Skip BigIron series (chassis routing switches)
-        oid: SNMPv2-MIB::sysDescr.0
-        op: '~'
-        value: 'BigIron'
-    -
-        # Skip TurboIron (routing switches)
-        oid: SNMPv2-MIB::sysDescr.0
-        op: '~'
-        value: 'TurboIron'
-    -
-        # Skip CES series (carrier ethernet switches)
-        oid: SNMPv2-MIB::sysDescr.0
-        op: '~'
-        value: 'CES'
-    -
-        # Skip CER series (carrier ethernet routers)
-        oid: SNMPv2-MIB::sysDescr.0
-        op: '~'
-        value: 'CER'
-    -
-        # Skip ServerIron (server load balancing switches)
-        oid: SNMPv2-MIB::sysDescr.0
-        op: '~'
-        value: 'ServerIron'
-    -
-        # Skip FESX series (older FastIron Edge switches - use foundryos)
-        oid: SNMPv2-MIB::sysDescr.0
-        op: '~'
-        value: 'FESX'
-    -
-        # Skip FWSX series (older FastIron Workgroup switches - use foundryos)
-        oid: SNMPv2-MIB::sysDescr.0
-        op: '~'
-        value: 'FWSX'
 modules:
     mempools:
         additional_oids:
