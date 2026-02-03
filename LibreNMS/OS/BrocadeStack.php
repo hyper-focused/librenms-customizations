@@ -7,7 +7,7 @@
  * Covers: FastIron (FCX, FWS, FLS, etc.) and ICX series — shared MIBs and discovery.
  * Enhanced stack topology discovery and per-unit inventory for both platforms.
  *
- * This class extends the Brocade base class (LibreNMS\OS\Shared\Brocade)
+ * This class provides comprehensive support for Brocade/Ruckus stack switches
  * which provides CPU discovery functionality using FOUNDRY-SN-AGENT-MIB.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -43,14 +43,14 @@ class BrocadeStack extends OS implements ProcessorDiscovery
 {
     /**
      * Discover OS information
-     * Extends Brocade base class with stack topology discovery
+     * Performs stack topology discovery and hardware mapping
      *
      * @param Device $device
      * @return void
      */
     public function discoverOS(Device $device): void
     {
-        parent::discoverOS($device); // YAML discovery + CPU from Brocade base
+        parent::discoverOS($device); // YAML discovery + CPU from integrated discovery
 
         $this->rewriteHardware(); // Translate hardware names
         $this->discoverStackTopology(); // Enhanced stack discovery
