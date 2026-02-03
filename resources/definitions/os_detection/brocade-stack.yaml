@@ -2,6 +2,7 @@
 # Single unified module: FastIron + ICX stackable switches
 # Three detection methods: Stack mode, Standalone FastIron, Standalone ICX
 # All detection is OID-based for maximum reliability and precision
+# No generic fallbacks - comprehensive family-specific OID coverage
 # FastIron: FGS, FLS, FWS, FCX families — enterprise 1991
 # ICX: 6430/6450/6610/6650/7150/7250/7450/7650/7750 families — enterprise 1991
 
@@ -42,14 +43,6 @@ discovery:
             - .1.3.6.1.4.1.1991.1.3.62  # ICX7250 family
             - .1.3.6.1.4.1.1991.1.3.64  # ICX7150 family
             - .1.3.6.1.4.1.1991.1.3.65  # ICX7650 family
-    -
-        # Generic FastIron/IronWare fallback
-        # Catches any remaining FastIron devices not covered above
-        sysDescr:
-            - 'FastIron'
-            - 'IronWare'
-        sysObjectID:
-            - .1.3.6.1.4.1.1991.1.3  # Generic Foundry FastIron
 
 # Minimal skip conditions - only exclude obvious non-stackable routing devices
 skip_values:
