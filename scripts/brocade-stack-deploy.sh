@@ -36,6 +36,7 @@ PATHS=(
 
 # Orphan files to remove (previously installed but no longer needed)
 ORPHAN_PATHS=(
+  "LibreNMS/OS/Shared/Brocade.php"
   "app/Models/IronwareStackMember.php"
   "app/Models/IronwareStackTopology.php"
   "app/Models/BrocadeStackMember.php"
