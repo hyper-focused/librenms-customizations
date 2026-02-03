@@ -35,9 +35,11 @@ use App\Models\Device;
 // Using device_attribs for LibreNMS compliance (no custom tables)
 use Illuminate\Support\Facades\Schema;
 use LibreNMS\Component;
-use LibreNMS\OS\Shared\Brocade;
+use LibreNMS\Device\Processor;
+use LibreNMS\Interfaces\Discovery\ProcessorDiscovery;
+use LibreNMS\OS;
 
-class BrocadeStack extends Brocade
+class BrocadeStack extends OS implements ProcessorDiscovery
 {
     /**
      * Discover OS information
@@ -747,5 +749,53 @@ class BrocadeStack extends Brocade
             array_values($rewrite_brocade_stack_hardware),
             $this->getDevice()->hardware
         );
+    }
+
+    /**
+     * Discover processors for Brocade devices
+     * Uses FOUNDRY-SN-AGENT-MIB::snAgentCpuUtilTable for per-slot/module CPU monitoring.
+     * Returns an array of Processor objects (required by ProcessorDiscovery interface).
+     *
+     * @return array<int, Processor>
+     */
+    public function discoverProcessors(): array
+    {
+        $processors = [];
+
+        // Get CPU utilization data from snAgentCpuUtilTable (per-module/slot)
+        $cpuData = \SnmpQuery::walk('FOUNDRY-SN-AGENT-MIB::snAgentCpuUtilTable')->table();
+
+        if (empty($cpuData)) {
+            return $processors;
+        }
+
+        foreach ($cpuData as $index => $data) {
+            $util5min = $data['snAgentCpuUtilValue'] ?? null;
+            if ($util5min === null || ! is_numeric($util5min)) {
+                continue;
+            }
+
+            // OID for this index (snAgentCpuUtilValue.INDEX)
+            $oid = '.1.3.6.1.4.1.1991.1.1.2.1.1.1.' . $index;
+
+            $processor = Processor::discover(
+                'FOUNDRY-SN-AGENT-MIB',
+                $this->getDeviceId(),
+                $oid,
+                (string) $index,
+                "Slot {$index}",
+                1,
+                (int) $util5min,
+                null,
+                null,
+                (string) $index
+            );
+
+            if ($processor->isValid()) {
+                $processors[] = $processor;
+            }
+        }
+
+        return $processors;
     }
 }

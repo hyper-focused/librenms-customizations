@@ -27,7 +27,6 @@ CLONE_DIR="/tmp/librenms-customizations"
 # Paths we overlay (relative to LibreNMS root)
 PATHS=(
   "LibreNMS/OS/BrocadeStack.php"
-  "LibreNMS/OS/Shared/Brocade.php"
   "includes/discovery/brocade-stack.inc.php"
   "includes/polling/brocade-stack.inc.php"
   "resources/definitions/os_detection/brocade-stack.yaml"
@@ -169,7 +168,6 @@ else
 
 $GITIGNORE_MARKER
 LibreNMS/OS/BrocadeStack.php
-LibreNMS/OS/Shared/Brocade.php
 includes/discovery/brocade-stack.inc.php
 includes/polling/brocade-stack.inc.php
 resources/definitions/os_detection/brocade-stack.yaml

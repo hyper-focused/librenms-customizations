@@ -6,8 +6,7 @@ Unified FastIron + ICX stack discovery for LibreNMS. One OS (`brocade-stack`) an
 
 | Path | Purpose |
 |------|--------|
-| `LibreNMS/OS/BrocadeStack.php` | Main OS class for brocade-stack |
-| `LibreNMS/OS/Shared/Brocade.php` | Shared base class (CPU discovery) |
+| `LibreNMS/OS/BrocadeStack.php` | Main OS class for brocade-stack (includes CPU discovery) |
 | `includes/discovery/brocade-stack.inc.php` | Additional discovery logic |
 | `includes/polling/brocade-stack.inc.php` | Additional polling logic |
 | `resources/definitions/os_detection/brocade-stack.yaml` | OS detection rules |
@@ -37,7 +36,6 @@ Unified FastIron + ICX stack discovery for LibreNMS. One OS (`brocade-stack`) an
 Copy into LibreNMS:
 
 - `LibreNMS/OS/BrocadeStack.php` → LibreNMS `LibreNMS/OS/`
-- `LibreNMS/OS/Shared/Brocade.php` → LibreNMS `LibreNMS/OS/Shared/`
 - `includes/discovery/brocade-stack.inc.php` → LibreNMS `includes/discovery/`
 - `includes/polling/brocade-stack.inc.php` → LibreNMS `includes/polling/`
 - `resources/definitions/*` → LibreNMS `resources/definitions/`
