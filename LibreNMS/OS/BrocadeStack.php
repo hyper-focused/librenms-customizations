@@ -7,7 +7,7 @@
  * Covers: FastIron (FCX, FWS, FLS, etc.) and ICX series — shared MIBs and discovery.
  * Enhanced stack topology discovery and per-unit inventory for both platforms.
  *
- * This class extends the BrocadeBase class (LibreNMS\OS\Shared\BrocadeBase)
+ * This class extends the Brocade base class (LibreNMS\OS\Shared\Brocade)
  * which provides CPU discovery functionality using FOUNDRY-SN-AGENT-MIB.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -35,20 +35,20 @@ use App\Models\Device;
 // Using device_attribs for LibreNMS compliance (no custom tables)
 use Illuminate\Support\Facades\Schema;
 use LibreNMS\Component;
-use LibreNMS\OS\Shared\BrocadeBase;
+use LibreNMS\OS\Shared\Brocade;
 
-class BrocadeStack extends BrocadeBase
+class BrocadeStack extends Brocade
 {
     /**
      * Discover OS information
-     * Extends BrocadeBase class with stack topology discovery
+     * Extends Brocade base class with stack topology discovery
      *
      * @param Device $device
      * @return void
      */
     public function discoverOS(Device $device): void
     {
-        parent::discoverOS($device); // YAML discovery + CPU from BrocadeBase
+        parent::discoverOS($device); // YAML discovery + CPU from Brocade base
 
         $this->rewriteHardware(); // Translate hardware names
         $this->discoverStackTopology(); // Enhanced stack discovery

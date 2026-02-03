@@ -31,7 +31,7 @@ use LibreNMS\Device\Processor;
 use LibreNMS\Interfaces\Discovery\ProcessorDiscovery;
 use LibreNMS\OS;
 
-class BrocadeBase extends OS implements ProcessorDiscovery
+class Brocade extends OS implements ProcessorDiscovery
 {
     /**
      * Discover processors for Foundry-based devices

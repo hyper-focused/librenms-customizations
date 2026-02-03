@@ -9,7 +9,7 @@ Unified FastIron + ICX stack discovery for LibreNMS. One OS (`brocade-stack`) an
 | `resources/definitions/os_detection/brocade-stack.yaml` | OS detection (sysDescr/sysObjectID) |
 | `resources/definitions/os_discovery/brocade-stack.yaml` | Discovery config (mempools, sensors, hardware, etc.) |
 | `LibreNMS/OS/BrocadeStack.php` | OS class: stack topology, per-unit inventory, CPU discovery |
-| `LibreNMS/OS/Shared/BrocadeBase.php` | Shared base (CPU discovery); project-specific |
+| `LibreNMS/OS/Shared/Brocade.php` | Shared base (CPU discovery); project-specific |
 | `app/Models/IronwareStackTopology.php` | Stack topology model |
 | `app/Models/IronwareStackMember.php` | Stack member model |
 | `database/migrations/` | Schema for stack tables |
@@ -36,7 +36,7 @@ Unified FastIron + ICX stack discovery for LibreNMS. One OS (`brocade-stack`) an
 Copy into LibreNMS:
 
 - `LibreNMS/OS/BrocadeStack.php` → LibreNMS `LibreNMS/OS/`
-- `LibreNMS/OS/Shared/BrocadeBase.php` → LibreNMS `LibreNMS/OS/Shared/` (if not present)
+- `LibreNMS/OS/Shared/Brocade.php` → LibreNMS `LibreNMS/OS/Shared/` (if not present)
 - `resources/definitions/*` → LibreNMS `resources/definitions/`
 - `app/Models/*` → LibreNMS `app/Models/`
 - **Run migrations** so stack tables exist: `sudo -u librenms bash -c 'cd /opt/librenms && php artisan migrate --force'`
