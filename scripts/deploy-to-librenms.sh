@@ -30,13 +30,19 @@ PATHS=(
   "LibreNMS/OS/Shared/Foundry.php"
   "resources/definitions/os_detection/brocade-stack.yaml"
   "resources/definitions/os_discovery/brocade-stack.yaml"
+  "docs/IMPLEMENTATION.md"
+  "collect_snmp_data.sh"
+)
+
+# Orphan files to remove (previously installed but no longer needed)
+ORPHAN_PATHS=(
   "app/Models/IronwareStackMember.php"
   "app/Models/IronwareStackTopology.php"
+  "app/Models/BrocadeStackMember.php"
+  "app/Models/BrocadeStackTopology.php"
   "database/migrations/2026_01_17_000002_rename_ironware_to_brocade_stack_tables.php"
   "database/migrations/2026_01_17_000001_add_brocade_stack_tables.php"
   "database/migrations/2025_01_17_120000_add_brocade_stack_tables.php"
-  "docs/IMPLEMENTATION.md"
-  "collect_snmp_data.sh"
 )
 
 GITIGNORE_MARKER="# librenms-customizations overlay (ignore so upstream git pull does not overwrite)"
@@ -69,6 +75,17 @@ for p in "${PATHS[@]}"; do
   fi
 done
 
+# 2.5. Remove orphan files (previously installed but no longer needed)
+echo "Removing orphan/obsolete files..."
+for p in "${ORPHAN_PATHS[@]}"; do
+  if [ -f "$LIBRENMS_ROOT/$p" ]; then
+    echo "  removing orphan: $p"
+    rm -f "$LIBRENMS_ROOT/$p"
+  else
+    echo "  skip (not found): $p"
+  fi
+done
+
 # 3. Clone repo (as librenms)
 echo "Cloning $REPO_URL (branch: $BRANCH)..."
 if ! sudo -u librenms bash -c "rm -rf $CLONE_DIR && git clone --depth 1 -b $BRANCH $REPO_URL $CLONE_DIR"; then
@@ -86,6 +103,12 @@ if [ ! -d "$CLONE_DIR/.git" ]; then
 fi
 
 echo "Repository cloned successfully to $CLONE_DIR"
+
+# Verify we have the latest version
+cd "$CLONE_DIR"
+LATEST_COMMIT=$(git rev-parse HEAD)
+echo "Latest commit: $LATEST_COMMIT"
+cd - > /dev/null
 
 # 4. Copy files into LibreNMS (as librenms)
 echo "Copying overlay files..."
@@ -148,11 +171,6 @@ LibreNMS/OS/BrocadeStack.php
 LibreNMS/OS/Shared/Foundry.php
 resources/definitions/os_detection/brocade-stack.yaml
 resources/definitions/os_discovery/brocade-stack.yaml
-app/Models/IronwareStackMember.php
-app/Models/IronwareStackTopology.php
-database/migrations/2026_01_17_000002_rename_ironware_to_brocade_stack_tables.php
-database/migrations/2026_01_17_000001_add_brocade_stack_tables.php
-database/migrations/2025_01_17_120000_add_brocade_stack_tables.php
 docs/IMPLEMENTATION.md
 collect_snmp_data.sh
 GITIGNORE_EOF"
@@ -186,16 +204,10 @@ sudo -u librenms php artisan config:cache
 
 echo "Caches cleared aggressively"
 
-# 7. Run migrations (as librenms)
-echo "Running database migrations..."
-echo "Command: cd $LIBRENMS_ROOT && php artisan migrate --force"
-if sudo -u librenms bash -c "cd $LIBRENMS_ROOT && php artisan migrate --force"; then
-  echo "✅ Database migrations completed successfully"
-else
-  echo "⚠️  Database migration failed or was skipped"
-  echo "   You may need to run migrations manually:"
-  echo "   sudo -u librenms bash -c 'cd $LIBRENMS_ROOT && php artisan migrate --force'"
-fi
+# 7. Check for migrations (no migrations needed for this OS)
+echo "Checking for database migrations..."
+echo "Note: This OS uses device_attribs only - no custom tables or migrations required"
+echo "✅ Skipping database migrations (not needed for brocade-stack OS)"
 
 echo ""
 echo "🎉 DEPLOYMENT COMPLETE!"
@@ -217,4 +229,15 @@ echo ""
 echo "📝 Notes:"
 echo "  - Git pulls from upstream LibreNMS will ignore overlay files (.gitignore updated)"
 echo "  - All caches have been cleared aggressively"
-echo "  - Database migrations have been run (or attempted)"
+echo "  - No database migrations required (uses device_attribs only)"
+echo "  - Orphan files have been removed"
+
+echo ""
+echo "🔍 Verification Steps:"
+echo "  Run these commands to verify the deployment:"
+echo ""
+echo "  # Check that brocade-stack OS is available:"
+echo "  sudo -u librenms bash -c 'cd $LIBRENMS_ROOT && php -r \"echo \\\"Available OS: \\\"; \$os = include \\\"includes/definitions/os.php\\\"; echo isset(\$os['brocade-stack']) ? 'YES' : 'NO';\"'"
+echo ""
+echo "  # Test discovery on a device (replace DEVICE_ID):"
+echo "  sudo -u librenms bash -c 'cd $LIBRENMS_ROOT && php discovery.php -h DEVICE_ID -d' | head -20"
