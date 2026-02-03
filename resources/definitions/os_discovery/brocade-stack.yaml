@@ -27,11 +27,64 @@ modules:
     load: {data: []}
   power:
     data:
-      - oid: FOUNDRY-SN-AGENT-MIB::snChasPwrSupplyTable
-        value: FOUNDRY-SN-AGENT-MIB::snChasPwrSupplyOperStatus
+      - oid: FOUNDRY-SN-AGENT-MIB::snChasPwrSupply2Table
+        value: FOUNDRY-SN-AGENT-MIB::snChasPwrSupply2OperStatus
         descr: 'Power Supply'
         group: "Power Supply"
+        skip_values:
+          - oid: snStackingGlobalConfigState.0
+            op: "!="
+            value: 1
         states:
           - { value: 1, descr: other, graph: 0, generic: 3 }
           - { value: 2, descr: normal, graph: 1, generic: 0 }
           - { value: 3, descr: failure, graph: 0, generic: 2 }
+      - oid: FOUNDRY-SN-AGENT-MIB::snChasPwrSupplyTable
+        value: FOUNDRY-SN-AGENT-MIB::snChasPwrSupplyOperStatus
+        descr: 'Power Supply'
+        group: "Power Supply"
+        skip_values:
+          - oid: snStackingGlobalConfigState.0
+            op: "="
+            value: 1
+        states:
+          - { value: 1, descr: other, graph: 0, generic: 3 }
+          - { value: 2, descr: normal, graph: 1, generic: 0 }
+          - { value: 3, descr: failure, graph: 0, generic: 2 }
+  state:
+    data:
+      - oid: snStackingGlobalConfigState
+        value: snStackingGlobalConfigState
+        descr: 'Stack Configuration'
+        group: 'Stack Status'
+        states:
+          - { value: 0, descr: disabled, graph: 0, generic: 3 }
+          - { value: 1, descr: enabled, graph: 1, generic: 0 }
+          - { value: 2, descr: unsupported, graph: 0, generic: 2 }
+      - oid: snStackingOperUnitTable
+        value: snStackingOperUnitState
+        descr: 'Unit State'
+        group: "Stack Status"
+        states:
+          - { value: 1, descr: local, graph: 1, generic: 0 }
+          - { value: 2, descr: remote, graph: 1, generic: 0 }
+          - { value: 3, descr: reserved, graph: 0, generic: 2 }
+          - { value: 4, descr: empty, graph: 0, generic: 2 }
+        skip_values:
+          - oid: "SNMPv2-MIB::sysDescr.0"
+            op: "!~"
+            value: "Stacking System"
+      - oid: snStackingOperUnitTable
+        value: snStackingOperUnitRole
+        descr: 'Unit Role'
+        group: "Stack Status"
+        states:
+          - { value: 1, descr: other, graph: 0, generic: 3 }
+          - { value: 2, descr: active, graph: 1, generic: 0 }
+          - { value: 3, descr: standby, graph: 1, generic: 0 }
+          - { value: 4, descr: member, graph: 1, generic: 0 }
+          - { value: 5, descr: standalone, graph: 1, generic: 0 }
+        skip_values:
+          - oid: "SNMPv2-MIB::sysDescr.0"
+            op: "!~"
+            value: "Stacking System"
