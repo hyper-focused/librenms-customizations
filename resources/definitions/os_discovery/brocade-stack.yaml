@@ -8,6 +8,9 @@ mib:
   - FOUNDRY-SN-ROOT-MIB
 modules:
   mempools:
+    additional_oids:
+      oids:
+        - snAgentBrdMainBrdDescription
     data:
       - total: snAgSystemDRAMTotal
         free: snAgSystemDRAMFree
@@ -16,7 +19,7 @@ modules:
       - total: snAgentBrdMemoryTotal
         percent_used: snAgentBrdMemoryUtil100thPercent
         type: brocade-dyn
-        descr: 'Unit {{ $index }}'
+        descr: '{{ snAgentBrdMainBrdDescription }}'
   os:
     hardware_mib: FOUNDRY-SN-ROOT-MIB
     sysDescr_regex: '/(?:IronWare|FastIron) Version (?<version>[\d.]+[a-zA-Z0-9]*)/i'
@@ -24,6 +27,16 @@ modules:
     hardware_regex: '/(?:FCX|FWS|FLS|ICX)\d*[A-Z0-9-]*/i'
     serial: snChasSerNum.0
     version: snAgImgVer.0
+  processors:
+    data:
+      - oid: snAgentCpuUtilTable
+        value: snAgentCpuUtilPercent
+        descr: 'CPU Utilization ({{ $snAgentCpuUtilInterval }}s average)'
+        index: 'snAgentCpuUtilPercent.{{ $index }}'
+        skip_values:
+          - oid: snAgentCpuUtilInterval
+            op: '!='
+            value: 60
   sensors:
     count: {data: []}
     power: {data: []}
