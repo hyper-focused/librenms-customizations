@@ -25,7 +25,7 @@ modules:
     power: {data: []}
     temperature: {data: []}
     load: {data: []}
-  state:
+  power:
     data:
       - oid: FOUNDRY-SN-AGENT-MIB::snChasPwrSupplyTable
         value: FOUNDRY-SN-AGENT-MIB::snChasPwrSupplyOperStatus
