@@ -28,10 +28,11 @@ CLONE_DIR="/tmp/librenms-customizations"
 PATHS=(
   "LibreNMS/OS/BrocadeStack.php"
   "LibreNMS/OS/Shared/Brocade.php"
+  "includes/discovery/brocade-stack.inc.php"
+  "includes/polling/brocade-stack.inc.php"
   "resources/definitions/os_detection/brocade-stack.yaml"
   "resources/definitions/os_discovery/brocade-stack.yaml"
   "docs/IMPLEMENTATION.md"
-  "collect_snmp_data.sh"
 )
 
 # Orphan files to remove (previously installed but no longer needed)
@@ -169,10 +170,11 @@ else
 $GITIGNORE_MARKER
 LibreNMS/OS/BrocadeStack.php
 LibreNMS/OS/Shared/Brocade.php
+includes/discovery/brocade-stack.inc.php
+includes/polling/brocade-stack.inc.php
 resources/definitions/os_detection/brocade-stack.yaml
 resources/definitions/os_discovery/brocade-stack.yaml
 docs/IMPLEMENTATION.md
-collect_snmp_data.sh
 GITIGNORE_EOF"
   echo "  done."
 fi

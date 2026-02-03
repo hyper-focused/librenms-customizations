@@ -6,13 +6,14 @@ Unified FastIron + ICX stack discovery for LibreNMS. One OS (`brocade-stack`) an
 
 | Path | Purpose |
 |------|--------|
-| `resources/definitions/os_detection/brocade-stack.yaml` | OS detection (sysDescr/sysObjectID) |
-| `resources/definitions/os_discovery/brocade-stack.yaml` | Discovery config (mempools, sensors, hardware, etc.) |
-| `LibreNMS/OS/BrocadeStack.php` | OS class: stack topology, per-unit inventory, CPU discovery |
-| `LibreNMS/OS/Shared/Brocade.php` | Shared base (CPU discovery); project-specific |
-| `app/Models/IronwareStackTopology.php` | Stack topology model |
-| `app/Models/IronwareStackMember.php` | Stack member model |
-| `database/migrations/` | Schema for stack tables |
+| `LibreNMS/OS/BrocadeStack.php` | Main OS class for brocade-stack |
+| `LibreNMS/OS/Shared/Brocade.php` | Shared base class (CPU discovery) |
+| `includes/discovery/brocade-stack.inc.php` | Additional discovery logic |
+| `includes/polling/brocade-stack.inc.php` | Additional polling logic |
+| `resources/definitions/os_detection/brocade-stack.yaml` | OS detection rules |
+| `resources/definitions/os_discovery/brocade-stack.yaml` | Sensor and module configuration |
+| `scripts/deploy-to-librenms.sh` | Automated deployment script |
+| `docs/IMPLEMENTATION.md` | This documentation |
 
 ## Detection
 
@@ -36,18 +37,21 @@ Unified FastIron + ICX stack discovery for LibreNMS. One OS (`brocade-stack`) an
 Copy into LibreNMS:
 
 - `LibreNMS/OS/BrocadeStack.php` → LibreNMS `LibreNMS/OS/`
-- `LibreNMS/OS/Shared/Brocade.php` → LibreNMS `LibreNMS/OS/Shared/` (if not present)
+- `LibreNMS/OS/Shared/Brocade.php` → LibreNMS `LibreNMS/OS/Shared/`
+- `includes/discovery/brocade-stack.inc.php` → LibreNMS `includes/discovery/`
+- `includes/polling/brocade-stack.inc.php` → LibreNMS `includes/polling/`
 - `resources/definitions/*` → LibreNMS `resources/definitions/`
-- `app/Models/*` → LibreNMS `app/Models/`
-- **Run migrations** so stack tables exist: `sudo -u librenms bash -c 'cd /opt/librenms && php artisan migrate --force'`
 
-See [scripts/README.md](../scripts/README.md) for the deploy script.
+**No database migrations required** - uses `device_attribs` for storage.
+
+See `scripts/deploy-to-librenms.sh` for automated deployment.
 
 ## Deployment and live testing
 
-1. **Run the migration** before or right after copying files. If the stack tables are missing you will see:
-   - `Error discovering os module` and `Error discovering processors module`
-   - `Table 'librenms.brocade_stack_topologies' doesn't exist`
+1. **Run the deployment script**: `sudo ./scripts/deploy-to-librenms.sh`
+   - Copies all files to correct locations
+   - Clears caches automatically
+   - No database migrations required
    - Fix: `sudo -u librenms bash -c 'cd /opt/librenms && php artisan migrate --force'`
 2. If migration is not run, BrocadeStack now skips stack topology discovery and logs a warning instead of throwing; OS discovery and other modules still run.
 
