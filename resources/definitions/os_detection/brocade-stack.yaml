@@ -16,77 +16,38 @@ over:
 mib_dir: brocade
 discovery:
     -
-        # FastIron Stackable Switches - FCX Series
-        # Matches: FCX648, FCX648S, FCX648S-HPOE, FCX648S-1.0, etc.
+        # Brocade/Ruckus Stackable Switches - All stacking-enabled devices
+        # Shared sysObjectID for all stackable FastIron and ICX switches
         sysDescr:
-            - 'FCX'
+            - 'Stacking System'  # Primary indicator of stacking capability
         sysObjectID:
-            - .1.3.6.1.4.1.1991.1.3.48  # Foundry stackable FCX series
+            - .1.3.6.1.4.1.1991.1.3.48  # Foundry/Brocade stackable OID
     -
-        # FastIron Stackable Switches - FWS Series (Workgroup Stackable)
-        # Matches: FWS648, FWS648G, etc.
+        # ICX Stackable Switches - Brocade enterprise
         sysDescr:
-            - 'FWS'
+            - 'ICX'
         sysObjectID:
-            - .1.3.6.1.4.1.1991.1.3.48  # Foundry stackable FWS series
+            - .1.3.6.1.4.1.1588.2.1.1.1.3  # Brocade ICX enterprise OID
     -
-        # FastIron Layer 2 Switches - FLS Series
-        # Matches: FLS624, FLS648, FLS724, etc.
+        # FastIron Stackable Switches (standalone mode detection)
+        # These switches can stack but may be detected as standalone
         sysDescr:
-            - 'FLS'
+            - 'FCX'  # FCX Family
+            - 'FWS'  # FWS Workgroup Series
+            - 'FLS'  # FLS Layer 2 Series
         sysObjectID:
-            - .1.3.6.1.4.1.1991.1.3.48  # Foundry stackable FLS series
+            - .1.3.6.1.4.1.1991.1.3.48  # Stackable OID (when stacking enabled)
+            - .1.3.6.1.4.1.1991.1.3.54  # FCX Family standalone OID
+            - .1.3.6.1.4.1.1991.1.3.46  # FLS Family OID
+            - .1.3.6.1.4.1.1991.1.3.45  # FGS/FWS Family OID
     -
-        # ICX Stackable Switches - 6430/6450 Series
-        # Matches: ICX6430, ICX6450-24, ICX6450-48, ICX6450-24P, etc.
-        sysDescr:
-            - 'ICX6430'
-            - 'ICX6450'
-        sysObjectID:
-            - .1.3.6.1.4.1.1991.1.3.48  # Foundry stackable ICX series
-            - .1.3.6.1.4.1.1588.2.1.1.1.3  # Brocade ICX series
-    -
-        # ICX Stackable Switches - 6610/6650 Series
-        # Matches: ICX6610, ICX6650, etc.
-        sysDescr:
-            - 'ICX6610'
-            - 'ICX6650'
-        sysObjectID:
-            - .1.3.6.1.4.1.1991.1.3.48  # Foundry stackable ICX series
-            - .1.3.6.1.4.1.1588.2.1.1.1.3  # Brocade ICX series
-    -
-        # ICX Stackable Switches - 7150/7250 Series
-        # Matches: ICX7150, ICX7250, etc.
-        sysDescr:
-            - 'ICX7150'
-            - 'ICX7250'
-        sysObjectID:
-            - .1.3.6.1.4.1.1991.1.3.48  # Foundry stackable ICX series
-            - .1.3.6.1.4.1.1588.2.1.1.1.3  # Brocade ICX series
-    -
-        # ICX Stackable Switches - 7450/7650/7750 Series
-        # Matches: ICX7450, ICX7650, ICX7750, etc.
-        sysDescr:
-            - 'ICX7450'
-            - 'ICX7650'
-            - 'ICX7750'
-        sysObjectID:
-            - .1.3.6.1.4.1.1991.1.3.48  # Foundry stackable ICX series
-            - .1.3.6.1.4.1.1588.2.1.1.1.3  # Brocade ICX series
-    -
-        # Generic FastIron/IronWare matches (fallback)
+        # Generic FastIron/IronWare fallback
+        # Catches any remaining FastIron devices not covered above
         sysDescr:
             - 'FastIron'
             - 'IronWare'
         sysObjectID:
             - .1.3.6.1.4.1.1991.1.3  # Generic Foundry FastIron
-            - .1.3.6.1.4.1.1991.1.3.48  # Foundry stackable
-    -
-        # Brocade ICX generic match
-        sysDescr:
-            - 'Brocade ICX'
-        sysObjectID:
-            - .1.3.6.1.4.1.1588.2.1.1.1.3  # Brocade ICX series
 
 # Minimal skip conditions - only exclude obvious non-stackable routing devices
 skip_values:
