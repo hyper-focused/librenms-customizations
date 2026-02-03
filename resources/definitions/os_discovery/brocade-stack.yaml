@@ -276,6 +276,7 @@ discovery_modules:
     ipv4-addresses: true
     ipv6-addresses: true
     fdb-table: true
+    transceivers: true
 
 
 poller_modules:
