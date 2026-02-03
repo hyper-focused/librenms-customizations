@@ -5,7 +5,7 @@
 # Optional future: TurboIron if synergies exist (else in routing/modular project)
 
 os: brocade-stack
-text: 'FastIron / ICX Stack'
+text: 'FastIron / ICX Stackable Switches'
 type: network
 icon: brocade
 group: brocade
