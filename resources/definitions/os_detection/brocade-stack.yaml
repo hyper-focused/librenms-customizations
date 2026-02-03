@@ -1,8 +1,9 @@
 # Brocade Stack OS Detection
-# Single unified module: FastIron (FCX, FWS, FLS, etc.) + ICX stackable switches
-# FastIron: FCX, FWS, FLS — IronWare/FastIron OS, enterprise 1991
-# ICX: 6430/6450/6610/6650/7150/7250/7450/7650/7750 — FastIron OS, enterprise 1991 (OID-based detection)
-# Optional future: TurboIron if synergies exist (else in routing/modular project)
+# Single unified module: FastIron + ICX stackable switches
+# Three detection methods: Stack mode, Standalone FastIron, Standalone ICX
+# All detection is OID-based for maximum reliability and precision
+# FastIron: FGS, FLS, FWS, FCX families — enterprise 1991
+# ICX: 6430/6450/6610/6650/7150/7250/7450/7650/7750 families — enterprise 1991
 
 os: brocade-stack
 text: 'FastIron / ICX Stackable Switches'
@@ -16,15 +17,21 @@ over:
 mib_dir: brocade
 discovery:
     -
-        # Brocade/Ruckus Stackable Switches - All stacking-enabled devices
-        # Shared sysObjectID for all stackable FastIron and ICX switches
-        sysDescr:
-            - 'Stacking System'  # Primary indicator of stacking capability
+        # Stack Detection - Devices currently in stacking mode
+        # Uses the shared stackable OID for all stackable FastIron and ICX switches
         sysObjectID:
             - .1.3.6.1.4.1.1991.1.3.48  # Foundry/Brocade stackable OID
     -
-        # ICX Switch Families - OID-based detection
-        # All ICX families use specific Foundry enterprise OIDs
+        # Standalone FastIron Switches - FGS, FLS, FWS, FCX families
+        # OID-based detection for standalone FastIron switch families
+        sysObjectID:
+            - .1.3.6.1.4.1.1991.1.3.45  # FGS Family OID
+            - .1.3.6.1.4.1.1991.1.3.46  # FLS Family OID
+            - .1.3.6.1.4.1.1991.1.3.52  # FWS Family OID
+            - .1.3.6.1.4.1.1991.1.3.54  # FCX Family OID
+    -
+        # Standalone ICX Switches - All ICX families
+        # OID-based detection for standalone ICX switch families
         sysObjectID:
             - .1.3.6.1.4.1.1991.1.3.56  # ICX6610 family
             - .1.3.6.1.4.1.1991.1.3.57  # ICX6430 family
@@ -35,15 +42,6 @@ discovery:
             - .1.3.6.1.4.1.1991.1.3.62  # ICX7250 family
             - .1.3.6.1.4.1.1991.1.3.64  # ICX7150 family
             - .1.3.6.1.4.1.1991.1.3.65  # ICX7650 family
-    -
-        # FastIron Stackable Switches (standalone mode detection)
-        # These switches can stack but may be detected as standalone
-        # OID-based detection for FCX, FWS, FLS families
-        sysObjectID:
-            - .1.3.6.1.4.1.1991.1.3.45  # FGS/FWS Family OID
-            - .1.3.6.1.4.1.1991.1.3.46  # FLS Family OID
-            - .1.3.6.1.4.1.1991.1.3.48  # Stackable OID (when stacking enabled)
-            - .1.3.6.1.4.1.1991.1.3.54  # FCX Family standalone OID
     -
         # Generic FastIron/IronWare fallback
         # Catches any remaining FastIron devices not covered above
