@@ -26,6 +26,15 @@ discovery:
         # ICX Stackable Switches - All under FOUNDRY-SN-ROOT-MIB
         sysDescr:
             - 'ICX'
+            - 'ICX6430'
+            - 'ICX6450'
+            - 'ICX6610'
+            - 'ICX6650'
+            - 'ICX7150'
+            - 'ICX7250'
+            - 'ICX7450'
+            - 'ICX7650'
+            - 'ICX7750'
         sysObjectID:
             - .1.3.6.1.4.1.1991.1.3.48  # ICX stackable under Foundry enterprise
     -
