@@ -44,7 +44,7 @@ Implementation in progress; core unified module in place. See **[PROJECT_STATUS.
 | [PROJECT_STATUS.md](PROJECT_STATUS.md) | Current status, done, next steps |
 | [PROJECT_PLAN.md](PROJECT_PLAN.md) | Goals and technical plan |
 | [docs/UNIFIED_PLATFORM_SCOPE.md](docs/UNIFIED_PLATFORM_SCOPE.md) | Scope: FastIron + ICX (this repo) vs future routing/modular project |
-| [docs/README.md](docs/README.md) | Documentation index |
+| [docs/brocade-stack-readme.md](docs/brocade-stack-readme.md) | Documentation index |
 | [docs/SNMP_REFERENCE.md](docs/SNMP_REFERENCE.md) | OIDs and MIBs |
 | [tests/TESTING_GUIDE.md](tests/TESTING_GUIDE.md) | Testing |
 | [TODO.md](TODO.md) | Task list |
@@ -86,7 +86,7 @@ Current LibreNMS support for IronWare-based switches, particularly in stacked co
 ```
 /
 ├── docs/                      # Documentation
-│   ├── IMPLEMENTATION.md     # Implementation details
+│   ├── brocade-stack-implementation.md     # Implementation details
 │   └── SNMP_REFERENCE.md     # SNMP OID reference
 ├── includes/                  # LibreNMS discovery/polling code
 │   ├── discovery/

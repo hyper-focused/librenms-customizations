@@ -3,7 +3,7 @@
 # Run as root; all file operations run as user librenms (sudo -u librenms).
 #
 # Usage:
-#   sudo ./deploy-to-librenms.sh
+#   sudo ./brocade-stack-deploy.sh
 #
 # Optional env vars:
 #   LIBRENMS_ROOT   LibreNMS install path (default: /opt/librenms)
@@ -12,7 +12,7 @@
 #
 # To use /root/librenms-backups, create and chown first:
 #   sudo mkdir -p /root/librenms-backups && sudo chown librenms:librenms /root/librenms-backups
-#   export BACKUP_DIR=/root/librenms-backups; sudo -E ./deploy-to-librenms.sh
+#   export BACKUP_DIR=/root/librenms-backups; sudo -E ./brocade-stack-deploy.sh
 
 # Enable debug output
 set -x
@@ -32,7 +32,7 @@ PATHS=(
   "includes/polling/brocade-stack.inc.php"
   "resources/definitions/os_detection/brocade-stack.yaml"
   "resources/definitions/os_discovery/brocade-stack.yaml"
-  "docs/IMPLEMENTATION.md"
+  "docs/brocade-stack-implementation.md"
 )
 
 # Orphan files to remove (previously installed but no longer needed)
@@ -174,7 +174,7 @@ includes/discovery/brocade-stack.inc.php
 includes/polling/brocade-stack.inc.php
 resources/definitions/os_detection/brocade-stack.yaml
 resources/definitions/os_discovery/brocade-stack.yaml
-docs/IMPLEMENTATION.md
+docs/brocade-stack-implementation.md
 GITIGNORE_EOF"
   echo "  done."
 fi

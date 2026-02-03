@@ -12,8 +12,8 @@ Unified FastIron + ICX stack discovery for LibreNMS. One OS (`brocade-stack`) an
 | `includes/polling/brocade-stack.inc.php` | Additional polling logic |
 | `resources/definitions/os_detection/brocade-stack.yaml` | OS detection rules |
 | `resources/definitions/os_discovery/brocade-stack.yaml` | Sensor and module configuration |
-| `scripts/deploy-to-librenms.sh` | Automated deployment script |
-| `docs/IMPLEMENTATION.md` | This documentation |
+| `scripts/brocade-stack-deploy.sh` | Automated deployment script |
+| `docs/brocade-stack-implementation.md` | This documentation |
 
 ## Detection
 
@@ -44,11 +44,11 @@ Copy into LibreNMS:
 
 **No database migrations required** - uses `device_attribs` for storage.
 
-See `scripts/deploy-to-librenms.sh` for automated deployment.
+See `scripts/brocade-stack-deploy.sh` for automated deployment.
 
 ## Deployment and live testing
 
-1. **Run the deployment script**: `sudo ./scripts/deploy-to-librenms.sh`
+1. **Run the deployment script**: `sudo ./scripts/brocade-stack-deploy.sh`
    - Copies all files to correct locations
    - Clears caches automatically
    - No database migrations required

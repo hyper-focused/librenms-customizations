@@ -2,7 +2,7 @@
 
 | Doc | Description |
 |-----|-------------|
-| [IMPLEMENTATION.md](IMPLEMENTATION.md) | Technical implementation details |
+| [brocade-stack-implementation.md](brocade-stack-implementation.md) | Technical implementation details |
 | [SNMP_REFERENCE.md](SNMP_REFERENCE.md) | OIDs, MIBs, and SNMP details |
 | [UNIFIED_PLATFORM_SCOPE.md](UNIFIED_PLATFORM_SCOPE.md) | Platform coverage scope |
 | [PLATFORM_DIFFERENCES.md](PLATFORM_DIFFERENCES.md) | FCX vs ICX differences |
