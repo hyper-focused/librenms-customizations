@@ -37,8 +37,7 @@
 namespace LibreNMS\OS;
 
 use App\Models\Device;
-use App\Models\BrocadeStackTopology;
-use App\Models\BrocadeStackMember;
+// Using device_attribs for LibreNMS compliance (no custom tables)
 use Illuminate\Support\Facades\Schema;
 use LibreNMS\Component;
 use LibreNMS\OS\Shared\Foundry;
@@ -77,12 +76,6 @@ class BrocadeStack extends Foundry
     {
         $device = $this->getDevice();
 
-        // Require stack tables; skip stack discovery if migration was not run
-        if (! Schema::hasTable('brocade_stack_topologies') || ! Schema::hasTable('brocade_stack_members')) {
-            \Log::warning('BrocadeStack: brocade_stack_topologies / brocade_stack_members tables missing. Run: php artisan migrate --force');
-            return;
-        }
-
         // Check if stacking is enabled - handle case where OID doesn't exist
         $stackStateQuery = \SnmpQuery::get('FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalConfigState.0');
         $stackState = $stackStateQuery->value();
@@ -94,20 +87,28 @@ class BrocadeStack extends Foundry
 
             if (!$isStackCapable) {
                 // Not stack-capable, clean up old data
-                BrocadeStackTopology::where('device_id', $device->device_id)->delete();
+                $this->clearStackAttributes($device);
                 return;
             }
 
             // Device is stack-capable but not stacked - record as standalone
-            BrocadeStackTopology::updateOrCreate(
-                ['device_id' => $device->device_id],
-                [
-                    'topology' => 'standalone',
-                    'unit_count' => 1,
-                    'master_unit' => 1,
-                    'stack_mac' => null,
+            $this->storeStackTopology($device, [
+                'topology' => 'standalone',
+                'unit_count' => 1,
+                'master_unit' => 1,
+                'stack_mac' => null,
+                'members' => [
+                    1 => [
+                        'role' => 'standalone',
+                        'state' => 'active',
+                        'serial_number' => $this->getUnitSerial($device, 1),
+                        'model' => $this->getUnitModel($device, 1),
+                        'version' => $this->getUnitVersion($device, 1),
+                        'mac_address' => $this->getUnitMac($device, 1),
+                        'priority' => 128, // Default priority
+                    ]
                 ]
-            );
+            ]);
 
             // Still try to discover single unit hardware info
             $this->discoverStandaloneUnit($device);
@@ -147,19 +148,16 @@ class BrocadeStack extends Foundry
         // Identify master unit
         $masterUnit = $this->findMasterUnit($members);
 
-        // Update or create topology record
-        BrocadeStackTopology::updateOrCreate(
-            ['device_id' => $device->device_id],
-            [
-                'topology' => $topology,
-                'unit_count' => count($members),
-                'master_unit' => $masterUnit,
-                'stack_mac' => $stackMac,
-            ]
-        );
+        // Build stack topology data
+        $stackData = [
+            'topology' => $topology,
+            'unit_count' => count($members),
+            'master_unit' => $masterUnit,
+            'stack_mac' => $stackMac,
+            'members' => []
+        ];
 
         // Process each stack member
-        $currentMemberIds = [];
         foreach ($members as $unitId => $member) {
             // Get serial and description for this unit, handling missing data
             $unitSerial = null;
@@ -172,28 +170,71 @@ class BrocadeStack extends Foundry
                 $unitDescription = $descriptions[$unitId];
             }
 
-            $stackMember = $this->discoverStackMember(
-                $device,
-                $unitId,
-                $member,
-                $unitSerial,
-                $unitDescription
-            );
-
-            if ($stackMember) {
-                $currentMemberIds[] = $stackMember->id;
-            }
+            // Build member data
+            $stackData['members'][$unitId] = [
+                'role' => $this->mapRoleValue($member['snStackingOperUnitRole'] ?? 5),
+                'state' => $this->mapStateValue($member['snStackingOperUnitState'] ?? 4),
+                'serial_number' => $unitSerial,
+                'model' => $unitDescription,
+                'version' => $this->getUnitVersion($device, $unitId),
+                'mac_address' => $this->getUnitMac($device, $unitId),
+                'priority' => $member['snStackingOperUnitPriority'] ?? 128,
+            ];
         }
 
-        // Remove members that no longer exist (stack reduced/units failed)
-        if (!empty($currentMemberIds)) {
-            IronwareStackMember::where('device_id', $device->device_id)
-                ->whereNotIn('id', $currentMemberIds)
-                ->delete();
-        }
+        // Store the complete stack topology data
+        $this->storeStackTopology($device, $stackData);
 
         // Store stack data in Component system for device overview display
         $this->updateStackComponent($device, $topology, $masterUnit, $members, count($members));
+    }
+
+    /**
+     * Store stack topology data in device_attribs (LibreNMS compliant approach)
+     *
+     * @param Device $device
+     * @param array $stackData
+     * @return void
+     */
+    private function storeStackTopology(Device $device, array $stackData): void
+    {
+        $device->setAttrib('brocade_stack_topology', $stackData['topology']);
+        $device->setAttrib('brocade_stack_unit_count', $stackData['unit_count']);
+        $device->setAttrib('brocade_stack_master_unit', $stackData['master_unit']);
+        $device->setAttrib('brocade_stack_mac', $stackData['stack_mac']);
+        $device->setAttrib('brocade_stack_members', json_encode($stackData['members']));
+    }
+
+    /**
+     * Retrieve stack topology data from device_attribs
+     *
+     * @param Device $device
+     * @return array
+     */
+    private function getStackTopology(Device $device): array
+    {
+        return [
+            'topology' => $device->getAttrib('brocade_stack_topology') ?? 'unknown',
+            'unit_count' => (int) ($device->getAttrib('brocade_stack_unit_count') ?? 0),
+            'master_unit' => (int) ($device->getAttrib('brocade_stack_master_unit') ?? null),
+            'stack_mac' => $device->getAttrib('brocade_stack_mac'),
+            'members' => json_decode($device->getAttrib('brocade_stack_members') ?? '[]', true),
+        ];
+    }
+
+    /**
+     * Clear all stack-related attributes from device_attribs
+     *
+     * @param Device $device
+     * @return void
+     */
+    private function clearStackAttributes(Device $device): void
+    {
+        $device->forgetAttrib('brocade_stack_topology');
+        $device->forgetAttrib('brocade_stack_unit_count');
+        $device->forgetAttrib('brocade_stack_master_unit');
+        $device->forgetAttrib('brocade_stack_mac');
+        $device->forgetAttrib('brocade_stack_members');
     }
 
     /**
@@ -260,23 +301,24 @@ class BrocadeStack extends Foundry
     }
 
     /**
-     * Discover individual stack member
+     * Build stack member data array (no longer stores in separate table)
+     * Used by discoverStackTopology to build complete member data
      *
      * @param Device $device
      * @param int $unitId
      * @param array $member SNMP data for this member
      * @param string|null $serial Serial number
      * @param string|null $description Hardware description
-     * @return IronwareStackMember|null
+     * @return array Member data array
      */
-    private function discoverStackMember(
+    private function buildStackMemberData(
         Device $device,
         int $unitId,
         array $member,
         ?string $serial,
         ?string $description
-    ): ?IronwareStackMember {
-        $memberData = [
+    ): array {
+        return [
             'role' => $this->mapStackRole($member['snStackingOperUnitRole'] ?? 0),
             'state' => $this->mapStackState($member['snStackingOperUnitState'] ?? 0),
             'mac_address' => $member['snStackingOperUnitMac'] ?? null,
@@ -285,14 +327,6 @@ class BrocadeStack extends Foundry
             'serial_number' => $serial,
             'model' => $this->extractModel($description),
         ];
-
-        return IronwareStackMember::updateOrCreate(
-            [
-                'device_id' => $device->device_id,
-                'unit_id' => $unitId,
-            ],
-            $memberData
-        );
     }
 
     /**
@@ -477,24 +511,24 @@ class BrocadeStack extends Foundry
         // Extract model from sysDescr
         $model = $this->extractModelFromSysDescr($device->sysDescr);
 
-        // Create single unit record
-        $memberData = [
-            'role' => 'standalone',
-            'state' => 'active',
-            'serial_number' => $serialNumber,
-            'model' => $model,
-            'version' => $this->extractVersionFromSysDescr($device->sysDescr),
-            'mac_address' => null, // Would need to get from ifPhysAddress or similar
-            'priority' => 128, // Default priority for standalone
-        ];
-
-        IronwareStackMember::updateOrCreate(
-            [
-                'device_id' => $device->device_id,
-                'unit_id' => 1,
-            ],
-            $memberData
-        );
+        // Store standalone topology data
+        $this->storeStackTopology($device, [
+            'topology' => 'standalone',
+            'unit_count' => 1,
+            'master_unit' => 1,
+            'stack_mac' => null,
+            'members' => [
+                1 => [
+                    'role' => 'standalone',
+                    'state' => 'active',
+                    'serial_number' => $serialNumber,
+                    'model' => $model,
+                    'version' => $this->extractVersionFromSysDescr($device->sysDescr),
+                    'mac_address' => null, // Would need to get from ifPhysAddress or similar
+                    'priority' => 128, // Default priority for standalone
+                ]
+            ]
+        ]);
     }
 
     /**
@@ -528,15 +562,23 @@ class BrocadeStack extends Foundry
         \Log::warning("Standard Foundry stack MIBs not available on device {$device->hostname}. Treating as standalone stack-capable device.");
 
         // Fall back to standalone discovery
-        BrocadeStackTopology::updateOrCreate(
-            ['device_id' => $device->device_id],
-            [
-                'topology' => 'standalone',
-                'unit_count' => 1,
-                'master_unit' => 1,
-                'stack_mac' => null,
+        $this->storeStackTopology($device, [
+            'topology' => 'standalone',
+            'unit_count' => 1,
+            'master_unit' => 1,
+            'stack_mac' => null,
+            'members' => [
+                1 => [
+                    'role' => 'standalone',
+                    'state' => 'active',
+                    'serial_number' => $this->getUnitSerial($device, 1),
+                    'model' => $this->getUnitModel($device, 1),
+                    'version' => $this->getUnitVersion($device, 1),
+                    'mac_address' => $this->getUnitMac($device, 1),
+                    'priority' => 128,
+                ]
             ]
-        );
+        ]);
 
         $this->discoverStandaloneUnit($device);
     }
