@@ -16,71 +16,100 @@ over:
 mib_dir: brocade
 discovery:
     -
-        # Primary: Stacking System in sysDescr (FastIron + ICX)
-        # Matches: "Stacking System FCX648...", "Stacking System ICX6450-48...", FWS, FLS, etc.
+        # FastIron Stackable Switches - FCX Series
+        # Matches: FCX648, FCX648S, FCX648S-HPOE, FCX648S-1.0, etc.
         sysDescr:
-            - Stacking System
+            - 'FCX'
         sysObjectID:
-            - .1.3.6.1.4.1.1991.1.3.48  # Foundry stackable (FCX/ICX/FWS/FLS under 1991)
+            - .1.3.6.1.4.1.1991.1.3.48  # Foundry stackable FCX series
     -
-        # FastIron/IronWare without "Stacking System" (e.g. standalone FWS/FLS/FCX)
+        # FastIron Stackable Switches - FWS Series (Workgroup Stackable)
+        # Matches: FWS648, FWS648G, etc.
         sysDescr:
-            - FastIron
+            - 'FWS'
         sysObjectID:
-            - .1.3.6.1.4.1.1991.1.3
+            - .1.3.6.1.4.1.1991.1.3.48  # Foundry stackable FWS series
+    -
+        # FastIron Layer 2 Switches - FLS Series
+        # Matches: FLS624, FLS648, FLS724, etc.
+        sysDescr:
+            - 'FLS'
+        sysObjectID:
+            - .1.3.6.1.4.1.1991.1.3.48  # Foundry stackable FLS series
+    -
+        # ICX Stackable Switches - 6430/6450 Series
+        # Matches: ICX6430, ICX6450-24, ICX6450-48, ICX6450-24P, etc.
+        sysDescr:
+            - 'ICX6430'
+            - 'ICX6450'
+        sysObjectID:
+            - .1.3.6.1.4.1.1991.1.3.48  # Foundry stackable ICX series
+            - .1.3.6.1.4.1.1588.2.1.1.1.3  # Brocade ICX series
+    -
+        # ICX Stackable Switches - 6610/6650 Series
+        # Matches: ICX6610, ICX6650, etc.
+        sysDescr:
+            - 'ICX6610'
+            - 'ICX6650'
+        sysObjectID:
+            - .1.3.6.1.4.1.1991.1.3.48  # Foundry stackable ICX series
+            - .1.3.6.1.4.1.1588.2.1.1.1.3  # Brocade ICX series
+    -
+        # ICX Stackable Switches - 7150/7250 Series
+        # Matches: ICX7150, ICX7250, etc.
+        sysDescr:
+            - 'ICX7150'
+            - 'ICX7250'
+        sysObjectID:
+            - .1.3.6.1.4.1.1991.1.3.48  # Foundry stackable ICX series
+            - .1.3.6.1.4.1.1588.2.1.1.1.3  # Brocade ICX series
+    -
+        # ICX Stackable Switches - 7450/7650/7750 Series
+        # Matches: ICX7450, ICX7650, ICX7750, etc.
+        sysDescr:
+            - 'ICX7450'
+            - 'ICX7650'
+            - 'ICX7750'
+        sysObjectID:
+            - .1.3.6.1.4.1.1991.1.3.48  # Foundry stackable ICX series
+            - .1.3.6.1.4.1.1588.2.1.1.1.3  # Brocade ICX series
+    -
+        # Generic FastIron/IronWare matches (fallback)
+        sysDescr:
+            - 'FastIron'
+            - 'IronWare'
+        sysObjectID:
+            - .1.3.6.1.4.1.1991.1.3  # Generic Foundry FastIron
+            - .1.3.6.1.4.1.1991.1.3.48  # Foundry stackable
+    -
+        # Brocade ICX generic match
+        sysDescr:
+            - 'Brocade ICX'
+        sysObjectID:
+            - .1.3.6.1.4.1.1588.2.1.1.1.3  # Brocade ICX series
 
-# Skip conditions - prevent incorrect detection of routing switches
+# Minimal skip conditions - only exclude obvious non-stackable routing devices
 skip_values:
     -
-        # Skip NetIron routing switches
+        # Skip NetIron routing switches (clearly routing-focused)
         oid: SNMPv2-MIB::sysDescr.0
         op: '~'
         value: 'NetIron'
     -
-        # Skip MLX series routing switches
-        oid: SNMPv2-MIB::sysDescr.0
-        op: '~'
-        value: 'MLX'
-    -
-        # Skip XMR series routing switches
-        oid: SNMPv2-MIB::sysDescr.0
-        op: '~'
-        value: 'XMR'
-    -
-        # Skip BigIron chassis routing switches
+        # Skip BigIron chassis routing switches (enterprise routing)
         oid: SNMPv2-MIB::sysDescr.0
         op: '~'
         value: 'BigIron'
     -
-        # Skip TurboIron routing switches
+        # Skip TurboIron routing switches (core routing)
         oid: SNMPv2-MIB::sysDescr.0
         op: '~'
         value: 'TurboIron'
     -
-        # Skip CES carrier ethernet switches
-        oid: SNMPv2-MIB::sysDescr.0
-        op: '~'
-        value: 'CES'
-    -
-        # Skip CER series (carrier ethernet routers)
-        oid: SNMPv2-MIB::sysDescr.0
-        op: '~'
-        value: 'CER'
-    -
-        # Skip ServerIron (server load balancing switches)
+        # Skip ServerIron load balancers (application delivery)
         oid: SNMPv2-MIB::sysDescr.0
         op: '~'
         value: 'ServerIron'
-    -
-        # Skip FESX series (older FastIron Edge switches - use foundryos)
-        oid: SNMPv2-MIB::sysDescr.0
-        op: '~'
-        value: 'FESX'
-    -
-        # Skip FWSX series (older FastIron Workgroup switches - use foundryos)
-        oid: SNMPv2-MIB::sysDescr.0
-        op: '~'
-        value: 'FWSX'
     #  - Brocade enterprise not needed - fabric switch OID's only
         # Brocade enterprise (ICX, newer firmware)
         # sysDescr:
