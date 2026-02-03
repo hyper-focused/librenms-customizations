@@ -27,8 +27,8 @@ modules:
     load: {data: []}
   state:
     data:
-      - oid: snChasPwrSupplyTable
-        value: snChasPwrSupplyOperStatus
+      - oid: FOUNDRY-SN-AGENT-MIB::snChasPwrSupplyTable
+        value: FOUNDRY-SN-AGENT-MIB::snChasPwrSupplyOperStatus
         descr: 'Power Supply'
         group: "Power Supply"
         states:
