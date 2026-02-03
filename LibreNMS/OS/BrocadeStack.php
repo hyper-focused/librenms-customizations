@@ -199,7 +199,12 @@ class BrocadeStack extends OS implements ProcessorDiscovery
         $device->setAttrib('brocade_stack_topology', $stackData['topology']);
         $device->setAttrib('brocade_stack_unit_count', $stackData['unit_count']);
         $device->setAttrib('brocade_stack_master_unit', $stackData['master_unit']);
-        $device->setAttrib('brocade_stack_mac', $stackData['stack_mac']);
+
+        // Only set MAC if we have a valid value (not null)
+        if ($stackData['stack_mac'] !== null) {
+            $device->setAttrib('brocade_stack_mac', $stackData['stack_mac']);
+        }
+
         $device->setAttrib('brocade_stack_members', json_encode($stackData['members']));
     }
 
@@ -854,12 +859,18 @@ class BrocadeStack extends OS implements ProcessorDiscovery
      */
     private function getUnitMac(Device $device, int $unitId): ?string
     {
-        $macQuery = \SnmpQuery::get("FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingOperUnitMac.{$unitId}");
-        $mac = $macQuery->value();
+        try {
+            $macQuery = \SnmpQuery::get("FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingOperUnitMac.{$unitId}");
+            $mac = $macQuery->value();
 
-        if ($mac !== null) {
-            // Convert to standard MAC format if needed
-            return Mac::parse($mac)->hex();
+            if ($mac !== null && is_string($mac) && !empty($mac)) {
+                // Convert to standard MAC format if needed
+                $parsedMac = Mac::parse($mac);
+                return $parsedMac ? $parsedMac->hex() : null;
+            }
+        } catch (\Exception $e) {
+            // If anything fails, return null
+            return null;
         }
 
         return null;
