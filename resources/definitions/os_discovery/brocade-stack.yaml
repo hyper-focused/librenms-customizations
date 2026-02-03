@@ -1,11 +1,6 @@
 # Brocade Stack OS Discovery - FastIron + ICX stackable switches
 ---
-mib:
-  - FOUNDRY-SN-AGENT-MIB
-  - FOUNDRY-SN-SWITCH-GROUP-MIB
-  - FOUNDRY-SN-STACKING-MIB
-  - Brocade-REG-MIB
-  - FOUNDRY-SN-ROOT-MIB
+mib: FOUNDRY-SN-AGENT-MIB:FOUNDRY-SN-SWITCH-GROUP-MIB:FOUNDRY-SN-STACKING-MIB:Brocade-REG-MIB:FOUNDRY-SN-ROOT-MIB
 modules:
   mempools:
     data:
@@ -16,7 +11,7 @@ modules:
   os:
     hardware_mib: FOUNDRY-SN-ROOT-MIB
     sysDescr_regex: '/(?:IronWare|FastIron) Version (?<version>[\d.]+[a-zA-Z0-9]*)/'
-    hardware: [snChasUnitDescription.1]
+    hardware: snChasUnitDescription.1
     hardware_regex: '/(?:FCX|FWS|FLS|ICX)\d*[A-Z0-9-]*/i'
     serial: snChasSerNum.0
     version: snAgImgVer.0
