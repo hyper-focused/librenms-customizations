@@ -39,10 +39,10 @@ discovery:
 
 # Skip non-stackable routing devices
 skip_values:
-    - { oid: SNMPv2-MIB::sysDescr.0, op: '~', value: 'NetIron' }
-    - { oid: SNMPv2-MIB::sysDescr.0, op: '~', value: 'BigIron' }
-    - { oid: SNMPv2-MIB::sysDescr.0, op: '~', value: 'TurboIron' }
-    - { oid: SNMPv2-MIB::sysDescr.0, op: '~', value: 'ServerIron' }
+    - { oid: "SNMPv2-MIB::sysDescr.0", op: "~", value: "NetIron" }
+    - { oid: "SNMPv2-MIB::sysDescr.0", op: "~", value: "BigIron" }
+    - { oid: "SNMPv2-MIB::sysDescr.0", op: "~", value: "TurboIron" }
+    - { oid: "SNMPv2-MIB::sysDescr.0", op: "~", value: "ServerIron" }
 
 oids:
     no_bulk:
