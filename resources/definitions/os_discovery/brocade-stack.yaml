@@ -255,24 +255,29 @@ modules:
                       op: "!~"
                       value: "Stacking System"
 
-# Layer 2 switch with light L3 support
+# Layer 2 switch with light L3 support - FCX648 tested
 discovery_modules:
-    # Core monitoring
-    os: true
-    ports: true
-    ports-stack: true
-    sensors: true
-    mempools: true
-    processors: true
+    # Core monitoring (all working on FCX648)
+    os: true               # ✓ Working
+    ports: true            # ✓ Working (found interfaces)
+    ports-stack: true      # ✓ Working (found stack status)
+    sensors: true          # ✓ Working (returned temp data, but PHP errors)
+    mempools: true         # ✓ Working (found board descriptions)
+    processors: true       # ✓ Working (found CPU table)
     # Network protocols
-    lldp: true
-    stp: true
-    vlans: true
+    lldp: false            # ❌ No Such Object on FCX648
+    stp: true              # ✓ Working (found STP data)
+    vlans: true            # ✓ Working (found VLAN data)
     # Address management
-    ipv4-addresses: true
-    ipv6-addresses: true
-    fdb-table: true
-    route: true
+    ipv4-addresses: true   # ✓ Working (ran IP queries)
+    ipv6-addresses: true   # ✓ Working (ran IP table query)
+    fdb-table: true        # ✓ Working (ran SQL queries)
+    route: false           # ❌ No Such Object on FCX648
+    # Additional modules (enabled for testing)
+    transceivers: true     # ? Enabled (needs poller verification)
+    entity-state: true     # ✓ Working (ran SQL queries)
+    hr-mib: true           # ? Enabled (needs verification)
+    netstats: true         # ? Enabled (needs verification)
     # Disabled modules
     arp-table: false
     bgp: false
