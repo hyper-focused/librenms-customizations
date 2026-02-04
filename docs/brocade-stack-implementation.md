@@ -17,7 +17,7 @@ Unified FastIron + ICX stack discovery for LibreNMS. One OS (`brocade-stack`) an
 ## Detection
 
 - **OS**: `brocade-stack` (display: "FastIron / ICX Stack").
-- Matches: "Stacking System" or "IronWare" or "FastIron" in sysDescr; sysObjectID under Foundry (1991) or Brocade (1588) as in os_detection YAML.
+- Matches: "Stacking System" or "IronWare" or "FastIron" in sysDescr; sysObjectID under Foundry (1991) as in os_detection YAML.
 - Covers FastIron (FCX, FWS, FLS, etc.) and ICX in one module.
 
 ## Discovery

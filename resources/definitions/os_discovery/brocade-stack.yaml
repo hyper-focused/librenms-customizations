@@ -1,90 +1,91 @@
 # Brocade Stack OS Discovery - FastIron + ICX stackable switches
+# Foundry enterprise OID only: .1.3.6.1.4.1.1991
+# OIDs VERIFIED against FOUNDRY-SN-AGENT-MIB, FOUNDRY-SN-STACKING-MIB
 ---
-mib: FOUNDRY-SN-AGENT-MIB:FOUNDRY-SN-SWITCH-GROUP-MIB:FOUNDRY-SN-STACKING-MIB:Brocade-REG-MIB:FOUNDRY-SN-ROOT-MIB
+mib: FOUNDRY-SN-AGENT-MIB
 modules:
   mempools:
     data:
-      - total: snAgSystemDRAMTotal
-        free: snAgSystemDRAMFree
+      - total: FOUNDRY-SN-AGENT-MIB::snAgGblDynMemTotal
+        free: FOUNDRY-SN-AGENT-MIB::snAgGblDynMemFree
         descr: 'System Memory'
-        type: brocade-system
   os:
     hardware_mib: FOUNDRY-SN-ROOT-MIB
     sysDescr_regex: '/(?:IronWare|FastIron) Version (?<version>[\d.]+[a-zA-Z0-9]*)/'
-    hardware: snChasUnitDescription.1
     hardware_regex: '/(?:FCX|FWS|FLS|ICX)\d*[A-Z0-9-]*/i'
-    serial: snChasSerNum.0
-    version: snAgImgVer.0
-  processors:
-    data:
-      - oid: snAgentCpuUtilTable
-        value: snAgentCpuUtilPercent
-        descr: 'CPU'
+    serial: FOUNDRY-SN-AGENT-MIB::snChasSerNum.0
+    version: FOUNDRY-SN-AGENT-MIB::snAgImgVer.0
   sensors:
-    count: {data: []}
-    power: {data: []}
-    temperature: {data: []}
-    load: {data: []}
-  power:
-    data:
-      - oid: FOUNDRY-SN-AGENT-MIB::snChasPwrSupply2Table
-        value: FOUNDRY-SN-AGENT-MIB::snChasPwrSupply2OperStatus
-        descr: 'Power Supply'
-        group: "Power Supply"
-        skip_values:
-          - oid: snStackingGlobalConfigState.0
-            op: "!="
-            value: 1
-        states:
-          - { value: 1, descr: other, graph: 0, generic: 3 }
-          - { value: 2, descr: normal, graph: 1, generic: 0 }
-          - { value: 3, descr: failure, graph: 0, generic: 2 }
-      - oid: FOUNDRY-SN-AGENT-MIB::snChasPwrSupplyTable
-        value: FOUNDRY-SN-AGENT-MIB::snChasPwrSupplyOperStatus
-        descr: 'Power Supply'
-        group: "Power Supply"
-        skip_values:
-          - oid: snStackingGlobalConfigState.0
-            op: "="
-            value: 1
-        states:
-          - { value: 1, descr: other, graph: 0, generic: 3 }
-          - { value: 2, descr: normal, graph: 1, generic: 0 }
-          - { value: 3, descr: failure, graph: 0, generic: 2 }
-  state:
-    data:
-      - oid: snStackingGlobalConfigState
-        value: snStackingGlobalConfigState
-        descr: 'Stack Configuration'
-        group: 'Stack Status'
-        states:
-          - { value: 0, descr: disabled, graph: 0, generic: 3 }
-          - { value: 1, descr: enabled, graph: 1, generic: 0 }
-          - { value: 2, descr: unsupported, graph: 0, generic: 2 }
-      - oid: snStackingOperUnitTable
-        value: snStackingOperUnitState
-        descr: 'Unit State'
-        group: "Stack Status"
-        states:
-          - { value: 1, descr: local, graph: 1, generic: 0 }
-          - { value: 2, descr: remote, graph: 1, generic: 0 }
-          - { value: 3, descr: reserved, graph: 0, generic: 2 }
-          - { value: 4, descr: empty, graph: 0, generic: 2 }
-        skip_values:
-          - oid: "SNMPv2-MIB::sysDescr.0"
-            op: "!~"
-            value: "Stacking System"
-      - oid: snStackingOperUnitTable
-        value: snStackingOperUnitRole
-        descr: 'Unit Role'
-        group: "Stack Status"
-        states:
-          - { value: 1, descr: other, graph: 0, generic: 3 }
-          - { value: 2, descr: active, graph: 1, generic: 0 }
-          - { value: 3, descr: standby, graph: 1, generic: 0 }
-          - { value: 4, descr: member, graph: 1, generic: 0 }
-          - { value: 5, descr: standalone, graph: 1, generic: 0 }
-        skip_values:
-          - oid: "SNMPv2-MIB::sysDescr.0"
-            op: "!~"
-            value: "Stacking System"
+    power:
+      data:
+        - oid: FOUNDRY-SN-AGENT-MIB::snChasPwrSupply2Table
+          value: FOUNDRY-SN-AGENT-MIB::snChasPwrSupply2OperStatus
+          num_oid: '.1.3.6.1.4.1.1991.4.1.2.2.1.4.{{ $index }}'
+          descr: 'Power Supply {{ $index }}'
+          group: 'Power Supply'
+          state_name: snChasPwrSupply2OperStatus
+          skip_values:
+            - oid: FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalConfigState.0
+              op: "!="
+              value: 1
+          states:
+            - { value: 1, descr: other, graph: 0, generic: 3 }
+            - { value: 2, descr: normal, graph: 1, generic: 0 }
+            - { value: 3, descr: failure, graph: 0, generic: 2 }
+        - oid: FOUNDRY-SN-AGENT-MIB::snChasPwrSupplyTable
+          value: FOUNDRY-SN-AGENT-MIB::snChasPwrSupplyOperStatus
+          num_oid: '.1.3.6.1.4.1.1991.4.1.2.1.1.3.{{ $index }}'
+          descr: 'Power Supply {{ $index }}'
+          group: 'Power Supply'
+          state_name: snChasPwrSupplyOperStatus
+          skip_values:
+            - oid: FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalConfigState.0
+              op: "="
+              value: 1
+          states:
+            - { value: 1, descr: other, graph: 0, generic: 3 }
+            - { value: 2, descr: normal, graph: 1, generic: 0 }
+            - { value: 3, descr: failure, graph: 0, generic: 2 }
+    state:
+      data:
+        - oid: FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalConfigState
+          value: FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalConfigState
+          num_oid: '.1.3.6.1.4.1.1991.1.1.31.1.1.0'
+          descr: 'Stack Configuration'
+          group: 'Stack Status'
+          state_name: snStackingGlobalConfigState
+          states:
+            - { value: 0, descr: disabled, graph: 0, generic: 3 }
+            - { value: 1, descr: enabled, graph: 1, generic: 0 }
+            - { value: 2, descr: unsupported, graph: 0, generic: 2 }
+        - oid: FOUNDRY-SN-STACKING-MIB::snStackingOperUnitTable
+          value: FOUNDRY-SN-STACKING-MIB::snStackingOperUnitState
+          num_oid: '.1.3.6.1.4.1.1991.1.1.31.2.2.1.5.{{ $index }}'
+          descr: 'Unit {{ $index }} State'
+          group: 'Stack Status'
+          state_name: snStackingOperUnitState
+          skip_values:
+            - oid: "SNMPv2-MIB::sysDescr.0"
+              op: "!~"
+              value: "Stacking System"
+          states:
+            - { value: 1, descr: local, graph: 1, generic: 0 }
+            - { value: 2, descr: remote, graph: 1, generic: 0 }
+            - { value: 3, descr: reserved, graph: 0, generic: 2 }
+            - { value: 4, descr: empty, graph: 0, generic: 2 }
+        - oid: FOUNDRY-SN-STACKING-MIB::snStackingOperUnitTable
+          value: FOUNDRY-SN-STACKING-MIB::snStackingOperUnitRole
+          num_oid: '.1.3.6.1.4.1.1991.1.1.31.2.2.1.2.{{ $index }}'
+          descr: 'Unit {{ $index }} Role'
+          group: 'Stack Status'
+          state_name: snStackingOperUnitRole
+          skip_values:
+            - oid: "SNMPv2-MIB::sysDescr.0"
+              op: "!~"
+              value: "Stacking System"
+          states:
+            - { value: 1, descr: other, graph: 0, generic: 3 }
+            - { value: 2, descr: active, graph: 1, generic: 0 }
+            - { value: 3, descr: standby, graph: 1, generic: 0 }
+            - { value: 4, descr: member, graph: 1, generic: 0 }
+            - { value: 5, descr: standalone, graph: 1, generic: 0 }

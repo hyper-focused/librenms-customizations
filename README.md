@@ -54,13 +54,13 @@ Implementation in progress; core unified module in place. See **[PROJECT_STATUS.
 ### About IronWare-Based Switches
 
 - **Manufacturer**: Originally Foundry Networks → Brocade → Ruckus (CommScope)
-- **Product Lines**: 
+- **Product Lines**:
   - Foundry FCX series (legacy)
   - Brocade/Ruckus ICX series (current)
 - **Operating Systems**: IronWare (Foundry) / FastIron (Brocade/Ruckus)
 - **Key Feature**: Virtual chassis stacking (up to 12 units)
 - **Management**: SNMP v2c/v3, CLI
-- **Enterprise OID**: 1991 (Foundry), 1588 (Brocade)
+- **Enterprise OID**: 1991 (Foundry Networks)
 
 ### Why This Project?
 
