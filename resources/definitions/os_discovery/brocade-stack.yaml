@@ -187,6 +187,9 @@ modules:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "="
               value: 5
+            - oid: "FOUNDRY-SN-AGENT-MIB::snAgentBrd2RedundantStatus"
+              op: "="
+              value: 1
           states:
             - {value: 1, descr: other, graph: 0, generic: 3}
             - {value: 2, descr: active, graph: 1, generic: 0}
