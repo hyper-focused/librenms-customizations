@@ -774,8 +774,8 @@ class BrocadeStack extends OS implements ProcessorDiscovery
                 continue;
             }
 
-            // OID for this index (snAgentCpuUtilValue.INDEX)
-            $oid = '.1.3.6.1.4.1.1991.1.1.2.1.1.1.' . $index;
+            // OID for this index (snAgentCpuUtilPercent.INDEX)
+            $oid = '.1.3.6.1.4.1.1991.1.1.2.11.1.1.5.' . $index;
 
             $processor = Processor::discover(
                 'FOUNDRY-SN-AGENT-MIB',
