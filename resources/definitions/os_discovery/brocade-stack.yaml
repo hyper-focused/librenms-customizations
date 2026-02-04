@@ -1,6 +1,7 @@
 # Brocade Stack OS Discovery - FastIron + ICX stackable switches
 # Foundry enterprise OID only: .1.3.6.1.4.1.1991
-# OIDs VERIFIED against FOUNDRY-SN-AGENT-MIB, FOUNDRY-SN-STACKING-MIB
+# OIDs VERIFIED against FCX648 6-unit stack running IronWare 08.0.30uT7f1
+# Testing date: 2026-02-04
 ---
 mib: FOUNDRY-SN-AGENT-MIB
 modules:
@@ -18,49 +19,52 @@ modules:
   sensors:
     power:
       data:
+        # Power Supply Table 2 - For stacked configurations
+        # Index format: {unit}.{ps_number} (e.g., 1.1, 1.2, 2.1, 2.2, etc.)
+        # Verified: 6 units × 2 PS each = 12 total power supplies
         - oid: FOUNDRY-SN-AGENT-MIB::snChasPwrSupply2Table
           value: FOUNDRY-SN-AGENT-MIB::snChasPwrSupply2OperStatus
-          num_oid: '.1.3.6.1.4.1.1991.4.1.2.2.1.4.{{ $index }}'
+          num_oid: '.1.3.6.1.4.1.1991.1.1.1.2.2.1.4.{{ $index }}'
           descr: 'Power Supply {{ $index }}'
           group: 'Power Supply'
           state_name: snChasPwrSupply2OperStatus
-          skip_values:
-            - oid: FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalConfigState.0
-              op: "!="
-              value: 1
           states:
             - { value: 1, descr: other, graph: 0, generic: 3 }
             - { value: 2, descr: normal, graph: 1, generic: 0 }
             - { value: 3, descr: failure, graph: 0, generic: 2 }
+        # Power Supply Table 1 - Fallback for standalone or older firmware
+        # Index format: {ps_number} (e.g., 1, 2)
         - oid: FOUNDRY-SN-AGENT-MIB::snChasPwrSupplyTable
           value: FOUNDRY-SN-AGENT-MIB::snChasPwrSupplyOperStatus
-          num_oid: '.1.3.6.1.4.1.1991.4.1.2.1.1.3.{{ $index }}'
+          num_oid: '.1.3.6.1.4.1.1991.1.1.1.2.1.1.3.{{ $index }}'
           descr: 'Power Supply {{ $index }}'
           group: 'Power Supply'
           state_name: snChasPwrSupplyOperStatus
-          skip_values:
-            - oid: FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalConfigState.0
-              op: "="
-              value: 1
           states:
             - { value: 1, descr: other, graph: 0, generic: 3 }
             - { value: 2, descr: normal, graph: 1, generic: 0 }
             - { value: 3, descr: failure, graph: 0, generic: 2 }
     state:
       data:
-        - oid: FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalConfigState
-          value: FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalConfigState
-          num_oid: '.1.3.6.1.4.1.1991.1.1.31.1.1.0'
-          descr: 'Stack Configuration'
-          group: 'Stack Status'
-          state_name: snStackingGlobalConfigState
-          states:
-            - { value: 0, descr: disabled, graph: 0, generic: 3 }
-            - { value: 1, descr: enabled, graph: 1, generic: 0 }
-            - { value: 2, descr: unsupported, graph: 0, generic: 2 }
+        # Stack Configuration State - DISABLED
+        # This OID does NOT exist on firmware 08.0.30u (returns "No Such Object")
+        # Commented out to prevent discovery errors
+        # - oid: FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalConfigState
+        #   value: FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalConfigState
+        #   num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.1.1.0'
+        #   descr: 'Stack Configuration'
+        #   group: 'Stack Status'
+        #   state_name: snStackingGlobalConfigState
+        #   states:
+        #     - { value: 0, descr: disabled, graph: 0, generic: 3 }
+        #     - { value: 1, descr: enabled, graph: 1, generic: 0 }
+        #     - { value: 2, descr: unsupported, graph: 0, generic: 2 }
+
+        # Stack Unit State - Verified working on 6-unit stack
+        # Returns: 1=local (master), 2=remote (other members)
         - oid: FOUNDRY-SN-STACKING-MIB::snStackingOperUnitTable
           value: FOUNDRY-SN-STACKING-MIB::snStackingOperUnitState
-          num_oid: '.1.3.6.1.4.1.1991.1.1.31.2.2.1.5.{{ $index }}'
+          num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.5.{{ $index }}'
           descr: 'Unit {{ $index }} State'
           group: 'Stack Status'
           state_name: snStackingOperUnitState
@@ -73,9 +77,12 @@ modules:
             - { value: 2, descr: remote, graph: 1, generic: 0 }
             - { value: 3, descr: reserved, graph: 0, generic: 2 }
             - { value: 4, descr: empty, graph: 0, generic: 2 }
+
+        # Stack Unit Role - Verified working on 6-unit stack
+        # Returns: 2=active (master), 3=standby, 4=member
         - oid: FOUNDRY-SN-STACKING-MIB::snStackingOperUnitTable
           value: FOUNDRY-SN-STACKING-MIB::snStackingOperUnitRole
-          num_oid: '.1.3.6.1.4.1.1991.1.1.31.2.2.1.2.{{ $index }}'
+          num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.{{ $index }}'
           descr: 'Unit {{ $index }} Role'
           group: 'Stack Status'
           state_name: snStackingOperUnitRole
