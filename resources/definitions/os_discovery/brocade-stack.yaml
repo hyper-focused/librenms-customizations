@@ -45,16 +45,16 @@ modules:
     temperature:
       data:
         # Module Temperatures - Base sensor table
-        - oid: snAgentTempTable
-          value: snAgentTempValue
+        - oid: FOUNDRY-SN-AGENT-MIB::snAgentTempTable
+          value: FOUNDRY-SN-AGENT-MIB::snAgentTempValue
           divisor: 2
           num_oid: '.1.3.6.1.4.1.1991.1.1.2.13.1.1.4.{{ $index }}'
           descr: snAgentTempSensorDescr
           index: '{{ $index }}'
           group: 'Module Temperatures'
         # Module Temperatures - Extended sensor table (per-unit)
-        - oid: snAgentTemp2Table
-          value: snAgentTemp2Value
+        - oid: FOUNDRY-SN-AGENT-MIB::snAgentTemp2Table
+          value: FOUNDRY-SN-AGENT-MIB::snAgentTemp2Value
           divisor: 2
           num_oid: '.1.3.6.1.4.1.1991.1.1.2.13.3.1.5.{{ $index }}'
           descr: 'Unit {{ $subindex0 }}/{{ $subindex1 }} Sensor'
@@ -64,8 +64,8 @@ modules:
       data:
         # Power Supply Status - Table 1 (standard/standalone)
         # Returns: 1=other, 2=normal, 3=failure
-        - oid: snChasPwrSupplyTable
-          value: snChasPwrSupplyOperStatus
+        - oid: FOUNDRY-SN-AGENT-MIB::snChasPwrSupplyTable
+          value: FOUNDRY-SN-AGENT-MIB::snChasPwrSupplyOperStatus
           num_oid: '.1.3.6.1.4.1.1991.1.1.1.2.1.1.3.{{ $index }}'
           descr: 'Power Supply {{ $index }}'
           index: '{{ $index }}'
@@ -95,8 +95,8 @@ modules:
             - {value: 3, descr: failure, graph: 0, generic: 2}
         # Fan Status
         # Returns: 1=other, 2=normal, 3=failure
-        - oid: snChasFanTable
-          value: snChasFanOperStatus
+        - oid: FOUNDRY-SN-AGENT-MIB::snChasFanTable
+          value: FOUNDRY-SN-AGENT-MIB::snChasFanOperStatus
           num_oid: '.1.3.6.1.4.1.1991.1.1.1.3.1.1.3.{{ $index }}'
           descr: 'Fan {{ $index }}'
           index: 'snChasFanOperStatus.{{ $index }}'
