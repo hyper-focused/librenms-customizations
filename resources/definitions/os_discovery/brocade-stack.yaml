@@ -129,6 +129,49 @@ modules:
             - {value: 2, descr: normal, graph: 1, generic: 0}
             - {value: 3, descr: failure, graph: 0, generic: 2}
 
+        # Board Module Status - Per-unit board operational status (stacked)
+        # Index format: {unit}.{slot} (e.g., 1.1, 2.1, 3.1)
+        # Returns: 0=empty, 2=goingDown, 3=rejected, 4=bad, 8=configured, 9=comingUp, 10=running
+        - oid: FOUNDRY-SN-AGENT-MIB::snAgentBrd2Table
+          value: FOUNDRY-SN-AGENT-MIB::snAgentBrd2ModuleStatus
+          num_oid: '.1.3.6.1.4.1.1991.1.1.2.2.2.1.6.{{ $index }}'
+          descr: 'Unit {{ $subindex0 }} Slot {{ $subindex1 }} Module'
+          index: '{{ $index }}'
+          group: 'Board Status'
+          state_name: snAgentBrd2ModuleStatus
+          skip_values:
+            - oid: "SNMPv2-MIB::sysDescr.0"
+              op: "!~"
+              value: "Stacking System"
+          states:
+            - {value: 0, descr: empty, graph: 0, generic: 3}
+            - {value: 2, descr: goingDown, graph: 0, generic: 2}
+            - {value: 3, descr: rejected, graph: 0, generic: 2}
+            - {value: 4, descr: bad, graph: 0, generic: 2}
+            - {value: 8, descr: configured, graph: 1, generic: 0}
+            - {value: 9, descr: comingUp, graph: 1, generic: 0}
+            - {value: 10, descr: running, graph: 1, generic: 0}
+        # Board Redundancy Status - Per-unit redundancy status (stacked)
+        # Index format: {unit}.{slot} (e.g., 1.1, 2.1, 3.1)
+        # Returns: 1=other, 2=active, 3=standby, 4=crashed, 5=comingUp
+        - oid: FOUNDRY-SN-AGENT-MIB::snAgentBrd2Table
+          value: FOUNDRY-SN-AGENT-MIB::snAgentBrd2RedundantStatus
+          num_oid: '.1.3.6.1.4.1.1991.1.1.2.2.2.1.7.{{ $index }}'
+          descr: 'Unit {{ $subindex0 }} Slot {{ $subindex1 }} Redundancy'
+          index: '{{ $index }}'
+          group: 'Board Status'
+          state_name: snAgentBrd2RedundantStatus
+          skip_values:
+            - oid: "SNMPv2-MIB::sysDescr.0"
+              op: "!~"
+              value: "Stacking System"
+          states:
+            - {value: 1, descr: other, graph: 0, generic: 3}
+            - {value: 2, descr: active, graph: 1, generic: 0}
+            - {value: 3, descr: standby, graph: 1, generic: 0}
+            - {value: 4, descr: crashed, graph: 0, generic: 2}
+            - {value: 5, descr: comingUp, graph: 1, generic: 0}
+
         # Stack Configuration State - DISABLED
         # This OID does NOT exist on firmware 08.0.30u
         # Commented out to prevent discovery errors
