@@ -12,11 +12,12 @@ modules:
   mempools:
     data:
       # System-wide DRAM (verified on IronWare 08.0.30u)
-      # OID .1.3.6.1.4.1.1991.1.1.2.1.54 = Total DRAM (bytes)
-      # OID .1.3.6.1.4.1.1991.1.1.2.1.55 = Free DRAM (bytes)
-      # OID .1.3.6.1.4.1.1991.1.1.2.1.53 = DRAM Utilization (percent)
-      - total: FOUNDRY-SN-AGENT-MIB::snAgSystemDRAMTotal
-        free: FOUNDRY-SN-AGENT-MIB::snAgSystemDRAMFree
+      # Using numerical OIDs because LibreNMS MIB can't resolve symbolic names
+      # OID .1.3.6.1.4.1.1991.1.1.2.1.54.0 = Total DRAM (bytes)
+      # OID .1.3.6.1.4.1.1991.1.1.2.1.55.0 = Free DRAM (bytes)
+      # OID .1.3.6.1.4.1.1991.1.1.2.1.53.0 = DRAM Utilization (percent)
+      - total: .1.3.6.1.4.1.1991.1.1.2.1.54.0
+        free: .1.3.6.1.4.1.1991.1.1.2.1.55.0
         descr: 'System Memory'
   os:
     hardware_mib: FOUNDRY-SN-ROOT-MIB
