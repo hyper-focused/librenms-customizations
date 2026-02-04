@@ -12,7 +12,7 @@ modules:
         descr: 'System Memory'
   os:
     hardware_mib: FOUNDRY-SN-ROOT-MIB
-    sysDescr_regex: '/(?:IronWare|FastIron) Version (?<version>[\d.]+[a-zA-Z0-9]*)/'
+    sysDescr_regex: '/(?:IronWare|FastIron) Version (?<version>[\d.]+[a-z0-9]*)/'
     hardware_regex: '/(?:FCX|FWS|FLS|ICX)\d*[A-Z0-9-]*/i'
     serial: FOUNDRY-SN-AGENT-MIB::snChasSerNum.0
     version: FOUNDRY-SN-AGENT-MIB::snAgImgVer.0
@@ -29,9 +29,9 @@ modules:
           group: 'Power Supply'
           state_name: snChasPwrSupply2OperStatus
           states:
-            - { value: 1, descr: other, graph: 0, generic: 3 }
-            - { value: 2, descr: normal, graph: 1, generic: 0 }
-            - { value: 3, descr: failure, graph: 0, generic: 2 }
+            - {value: 1, descr: other, graph: 0, generic: 3}
+            - {value: 2, descr: normal, graph: 1, generic: 0}
+            - {value: 3, descr: failure, graph: 0, generic: 2}
         # Power Supply Table 1 - Fallback for standalone or older firmware
         # Index format: {ps_number} (e.g., 1, 2)
         - oid: FOUNDRY-SN-AGENT-MIB::snChasPwrSupplyTable
@@ -41,9 +41,9 @@ modules:
           group: 'Power Supply'
           state_name: snChasPwrSupplyOperStatus
           states:
-            - { value: 1, descr: other, graph: 0, generic: 3 }
-            - { value: 2, descr: normal, graph: 1, generic: 0 }
-            - { value: 3, descr: failure, graph: 0, generic: 2 }
+            - {value: 1, descr: other, graph: 0, generic: 3}
+            - {value: 2, descr: normal, graph: 1, generic: 0}
+            - {value: 3, descr: failure, graph: 0, generic: 2}
     state:
       data:
         # Stack Configuration State - DISABLED
@@ -73,10 +73,10 @@ modules:
               op: "!~"
               value: "Stacking System"
           states:
-            - { value: 1, descr: local, graph: 1, generic: 0 }
-            - { value: 2, descr: remote, graph: 1, generic: 0 }
-            - { value: 3, descr: reserved, graph: 0, generic: 2 }
-            - { value: 4, descr: empty, graph: 0, generic: 2 }
+            - {value: 1, descr: local, graph: 1, generic: 0}
+            - {value: 2, descr: remote, graph: 1, generic: 0}
+            - {value: 3, descr: reserved, graph: 0, generic: 2}
+            - {value: 4, descr: empty, graph: 0, generic: 2}
 
         # Stack Unit Role - Verified working on 6-unit stack
         # Returns: 2=active (master), 3=standby, 4=member
@@ -91,8 +91,8 @@ modules:
               op: "!~"
               value: "Stacking System"
           states:
-            - { value: 1, descr: other, graph: 0, generic: 3 }
-            - { value: 2, descr: active, graph: 1, generic: 0 }
-            - { value: 3, descr: standby, graph: 1, generic: 0 }
-            - { value: 4, descr: member, graph: 1, generic: 0 }
-            - { value: 5, descr: standalone, graph: 1, generic: 0 }
+            - {value: 1, descr: other, graph: 0, generic: 3}
+            - {value: 2, descr: active, graph: 1, generic: 0}
+            - {value: 3, descr: standby, graph: 1, generic: 0}
+            - {value: 4, descr: member, graph: 1, generic: 0}
+            - {value: 5, descr: standalone, graph: 1, generic: 0}
