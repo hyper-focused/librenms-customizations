@@ -43,10 +43,6 @@ modules:
         num_oid: '.1.3.6.1.4.1.1991.1.1.2.11.1.1.5.{{ $index }}'
         descr: 'Unit {{ $subindex0 }}.{{ $subindex1 }} CPU'
         index: '{{ $index }}'
-        skip_values:
-          - oid: FOUNDRY-SN-AGENT-MIB::snAgentCpuUtilInterval
-            op: '!='
-            value: 1
   sensors:
     temperature:
       data:
@@ -127,9 +123,9 @@ modules:
           group: 'Fan Status'
           state_name: snChasFanOperStatus
           skip_values:
-            - oid: "SNMPv2-MIB::sysDescr.0"
-              op: "=~"
-              value: "Stacking System"
+            - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
+              op: "!="
+              value: 5
           states:
             - {value: 1, descr: other, graph: 0, generic: 3}
             - {value: 2, descr: normal, graph: 1, generic: 0}
@@ -145,9 +141,9 @@ modules:
           group: 'Fan Status'
           state_name: snChasFan2OperStatus
           skip_values:
-            - oid: "SNMPv2-MIB::sysDescr.0"
-              op: "!~"
-              value: "Stacking System"
+            - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
+              op: "="
+              value: 5
           states:
             - {value: 1, descr: other, graph: 0, generic: 3}
             - {value: 2, descr: normal, graph: 1, generic: 0}
@@ -159,14 +155,14 @@ modules:
         - oid: FOUNDRY-SN-AGENT-MIB::snAgentBrd2Table
           value: FOUNDRY-SN-AGENT-MIB::snAgentBrd2ModuleStatus
           num_oid: '.1.3.6.1.4.1.1991.1.1.2.2.2.1.6.{{ $index }}'
-          descr: 'Unit {{ $subindex0 }} Slot {{ $subindex1 }} Module'
+          descr: 'Unit {{ $subindex0 }} Module {{ $subindex1 }} Status'
           index: '{{ $index }}'
-          group: 'Board Status'
+          group: 'Module Status'
           state_name: snAgentBrd2ModuleStatus
           skip_values:
-            - oid: "SNMPv2-MIB::sysDescr.0"
-              op: "!~"
-              value: "Stacking System"
+            - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
+              op: "="
+              value: 5
           states:
             - {value: 0, descr: empty, graph: 0, generic: 3}
             - {value: 2, descr: goingDown, graph: 0, generic: 2}
@@ -183,17 +179,14 @@ modules:
         - oid: FOUNDRY-SN-AGENT-MIB::snAgentBrd2Table
           value: FOUNDRY-SN-AGENT-MIB::snAgentBrd2RedundantStatus
           num_oid: '.1.3.6.1.4.1.1991.1.1.2.2.2.1.7.{{ $index }}'
-          descr: 'Unit {{ $subindex0 }} Slot {{ $subindex1 }} Redundancy'
+          descr: 'Unit {{ $subindex0 }} Module {{ $subindex1 }} Redundancy Status'
           index: '{{ $index }}'
-          group: 'Board Status'
+          group: 'Module Status'
           state_name: snAgentBrd2RedundantStatus
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "="
               value: 5
-            - oid: FOUNDRY-SN-AGENT-MIB::snAgentBrd2RedundantStatus
-              op: "="
-              value: 1
           states:
             - {value: 1, descr: other, graph: 0, generic: 3}
             - {value: 2, descr: active, graph: 1, generic: 0}
@@ -222,7 +215,7 @@ modules:
           value: FOUNDRY-SN-STACKING-MIB::snStackingOperUnitState
           num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.5.{{ $index }}'
           descr: 'Unit {{ $index }} State'
-          group: 'Stack Status'
+          group: 'Stack Topology'
           state_name: snStackingOperUnitState
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
@@ -240,8 +233,8 @@ modules:
         - oid: FOUNDRY-SN-STACKING-MIB::snStackingOperUnitTable
           value: FOUNDRY-SN-STACKING-MIB::snStackingOperUnitRole
           num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.{{ $index }}'
-          descr: 'Unit {{ $index }} Role'
-          group: 'Stack Status'
+          descr: 'Unit {{ $index }} Topology'
+          group: 'Stack Topology'
           state_name: snStackingOperUnitRole
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
