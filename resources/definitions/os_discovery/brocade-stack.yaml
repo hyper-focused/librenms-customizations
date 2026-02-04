@@ -93,15 +93,37 @@ modules:
             - {value: 1, descr: other, graph: 0, generic: 3}
             - {value: 2, descr: normal, graph: 1, generic: 0}
             - {value: 3, descr: failure, graph: 0, generic: 2}
-        # Fan Status
+        # Fan Status - Table 1 (standard/standalone)
         # Returns: 1=other, 2=normal, 3=failure
         - oid: FOUNDRY-SN-AGENT-MIB::snChasFanTable
           value: FOUNDRY-SN-AGENT-MIB::snChasFanOperStatus
           num_oid: '.1.3.6.1.4.1.1991.1.1.1.3.1.1.3.{{ $index }}'
           descr: 'Fan {{ $index }}'
-          index: 'snChasFanOperStatus.{{ $index }}'
+          index: '{{ $index }}'
           group: 'Fan Status'
           state_name: snChasFanOperStatus
+          skip_values:
+            - oid: "SNMPv2-MIB::sysDescr.0"
+              op: "=~"
+              value: "Stacking System"
+          states:
+            - {value: 1, descr: other, graph: 0, generic: 3}
+            - {value: 2, descr: normal, graph: 1, generic: 0}
+            - {value: 3, descr: failure, graph: 0, generic: 2}
+        # Fan Status - Table 2 (stacked configurations)
+        # Index format: {unit}.{fan_index} (e.g., 1.1, 1.2, 2.1, 2.2)
+        # Returns: 1=other, 2=normal, 3=failure
+        - oid: FOUNDRY-SN-AGENT-MIB::snChasFan2Table
+          value: FOUNDRY-SN-AGENT-MIB::snChasFan2OperStatus
+          num_oid: '.1.3.6.1.4.1.1991.1.1.1.3.2.1.4.{{ $index }}'
+          descr: 'Unit {{ $subindex0 }} Fan {{ $subindex1 }}'
+          index: '{{ $index }}'
+          group: 'Fan Status'
+          state_name: snChasFan2OperStatus
+          skip_values:
+            - oid: "SNMPv2-MIB::sysDescr.0"
+              op: "!~"
+              value: "Stacking System"
           states:
             - {value: 1, descr: other, graph: 0, generic: 3}
             - {value: 2, descr: normal, graph: 1, generic: 0}
