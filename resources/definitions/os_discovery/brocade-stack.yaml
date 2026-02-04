@@ -14,7 +14,6 @@ modules:
       - total: FOUNDRY-SN-AGENT-MIB::snAgSystemDRAMTotal
         free: FOUNDRY-SN-AGENT-MIB::snAgSystemDRAMFree
         descr: 'System Memory'
-        type: ironware-system
   os:
     hardware_mib: FOUNDRY-SN-ROOT-MIB
     sysDescr_regex: '/(?:IronWare|FastIron) Version (?<version>[\d.]+[a-z\d]*)/'
