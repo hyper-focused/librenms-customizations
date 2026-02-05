@@ -249,3 +249,63 @@ modules:
             - {value: 3, descr: standby, graph: 0, generic: 0}
             - {value: 4, descr: member, graph: 0, generic: 0}
             - {value: 5, descr: standalone, graph: 0, generic: 0}
+
+    power:
+      data:
+        # PoE Per-Unit Capacity - Maximum power available per unit
+        # OID: .1.3.6.1.4.1.1991.1.1.2.14.4.1.1.2 (snAgentPoeUnitMaxPower)
+        # Units: Watts (no conversion needed)
+        # Only available on PoE-capable hardware
+        - oid: FOUNDRY-POE-MIB::snAgentPoeUnitTable
+          value: FOUNDRY-POE-MIB::snAgentPoeUnitMaxPower
+          num_oid: '.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.2.{{ $index }}'
+          descr: 'Unit {{ $index }} PoE Capacity'
+          index: '{{ $index }}'
+          group: 'PoE Power Budget'
+          low_limit: 0
+
+        # PoE Per-Unit Consumption - Current power consumption per unit
+        # OID: .1.3.6.1.4.1.1991.1.1.2.14.4.1.1.3 (snAgentPoeUnitConsumedPower)
+        # Units: Watts (no conversion needed)
+        # Only available on PoE-capable hardware
+        - oid: FOUNDRY-POE-MIB::snAgentPoeUnitTable
+          value: FOUNDRY-POE-MIB::snAgentPoeUnitConsumedPower
+          num_oid: '.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.3.{{ $index }}'
+          descr: 'Unit {{ $index }} PoE Consumption'
+          index: '{{ $index }}'
+          group: 'PoE Power Budget'
+          low_limit: 0
+
+        # PoE Per-Port Allocated Limit - Maximum power allocated to port
+        # OID: .1.3.6.1.4.1.1991.1.1.2.14.2.2.1.4 (snAgentPoePortWattage)
+        # Units: milliwatts (convert to watts with divisor: 1000)
+        # Filter: Only ports with PoE enabled (snAgentPoePortControl = 3)
+        - oid: FOUNDRY-POE-MIB::snAgentPoePortTable
+          value: FOUNDRY-POE-MIB::snAgentPoePortWattage
+          num_oid: '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.4.{{ $index }}'
+          descr: 'Port {{ $index }} PoE Limit'
+          index: '{{ $index }}'
+          group: 'PoE Per-Port'
+          divisor: 1000
+          low_limit: 0
+          skip_values:
+            - oid: ".1.3.6.1.4.1.1991.1.1.2.14.2.2.1.2.{{ $index }}"
+              op: "!="
+              value: 3
+
+        # PoE Per-Port Current Consumption - Actual power draw from port
+        # OID: .1.3.6.1.4.1.1991.1.1.2.14.2.2.1.5 (snAgentPoePortConsumed)
+        # Units: milliwatts (convert to watts with divisor: 1000)
+        # Filter: Only ports with PoE enabled (snAgentPoePortControl = 3)
+        - oid: FOUNDRY-POE-MIB::snAgentPoePortTable
+          value: FOUNDRY-POE-MIB::snAgentPoePortConsumed
+          num_oid: '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.5.{{ $index }}'
+          descr: 'Port {{ $index }} PoE Consumption'
+          index: '{{ $index }}'
+          group: 'PoE Per-Port'
+          divisor: 1000
+          low_limit: 0
+          skip_values:
+            - oid: ".1.3.6.1.4.1.1991.1.1.2.14.2.2.1.2.{{ $index }}"
+              op: "!="
+              value: 3

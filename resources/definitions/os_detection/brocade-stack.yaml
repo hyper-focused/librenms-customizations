@@ -53,6 +53,7 @@ register_mibs:
     - FOUNDRY-SN-AGENT-MIB
     - FOUNDRY-SN-SWITCH-GROUP-MIB
     - FOUNDRY-SN-STACKING-MIB
+    - FOUNDRY-POE-MIB
 
 # Brocade FCX/ICX Stacking Switches
 discovery_modules:
