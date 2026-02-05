@@ -61,10 +61,7 @@ if [ ! -d "$CLONE_DIR/.git" ]; then
   exit 1
 fi
 
-cd "$CLONE_DIR"
-LATEST_COMMIT=$(git rev-parse HEAD)
-COMMIT_MSG=$(git log -1 --pretty=format:'%s')
-cd - > /dev/null
+LATEST_COMMIT=$(sudo -u librenms bash -c "cd $CLONE_DIR && git rev-parse HEAD")
 
 echo ""
 echo "Downloaded to /tmp: $CLONE_DIR (commit: ${LATEST_COMMIT:0:7})"
