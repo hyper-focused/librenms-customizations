@@ -14,8 +14,6 @@
 #   sudo mkdir -p /root/librenms-backups && sudo chown librenms:librenms /root/librenms-backups
 #   export BACKUP_DIR=/root/librenms-backups; sudo -E ./brocade-stack-deploy.sh
 
-# Enable debug output
-set -x
 set -e
 
 LIBRENMS_ROOT="${LIBRENMS_ROOT:-/opt/librenms}"
@@ -54,146 +52,83 @@ if [ ! -d "$LIBRENMS_ROOT" ]; then
   exit 1
 fi
 
-echo "LibreNMS root: $LIBRENMS_ROOT"
-echo "Backup dir:    $BACKUP_DIR"
-echo "Repo:          $REPO_URL ($BRANCH)"
-echo "Clone dir:     $CLONE_DIR"
+echo "Deploying brocade-stack from $BRANCH to $LIBRENMS_ROOT"
 echo ""
 
 # 0. Check for and clean up any testing deployment artifacts
 GITIGNORE="$LIBRENMS_ROOT/.gitignore"
 if sudo -u librenms grep -qF "$GITIGNORE_MARKER_TEST" "$GITIGNORE" 2>/dev/null; then
-  echo "⚠️  DETECTED: Testing deployment artifacts from feature/poe-monitoring branch"
-  echo ""
-  echo "Cleaning up testing artifacts before production deployment..."
-  echo ""
-
-  # Remove TEST marker and associated paths from .gitignore
+  echo "Detected testing deployment artifacts - cleaning up..."
   sudo -u librenms bash -c "
-    # Remove TEST marker and the 3 lines following it
     sed -i.bak '/$GITIGNORE_MARKER_TEST/,+3d' '$GITIGNORE'
     rm -f '${GITIGNORE}.bak'
   "
-  echo "  ✅ Removed testing .gitignore entries"
-
-  # Check for testing backup directory and offer to remove
   TEST_BACKUP_DIR="$LIBRENMS_ROOT/librenms-backups-test"
   if [ -d "$TEST_BACKUP_DIR" ]; then
-    echo "  ℹ️  Found testing backup directory: $TEST_BACKUP_DIR"
-    echo "     (Will be preserved - remove manually if not needed)"
+    echo "Testing backup directory preserved at: $TEST_BACKUP_DIR"
   fi
-
-  echo ""
-  echo "Testing artifacts cleaned up. Proceeding with production deployment..."
   echo ""
 fi
 
-# 1. Create backup dir and ensure librenms can write
-echo "Creating backup directory..."
+# 1. Create backup dir and backup existing files
 mkdir -p "$BACKUP_DIR"
 chown librenms:librenms "$BACKUP_DIR" 2>/dev/null || true
 
-# 2. Backup existing files (run as librenms)
-echo "Backing up existing files..."
 for p in "${PATHS[@]}"; do
   if [ -f "$LIBRENMS_ROOT/$p" ]; then
     sudo -u librenms mkdir -p "$BACKUP_DIR/$(dirname "$p")"
-    sudo -u librenms cp -a "$LIBRENMS_ROOT/$p" "$BACKUP_DIR/$p"
-    echo "  backed up: $p"
-  else
-    echo "  skip (not found): $p"
+    sudo -u librenms cp -a "$LIBRENMS_ROOT/$p" "$BACKUP_DIR/$p" 2>/dev/null || true
   fi
 done
 
-# 2.5. Remove orphan files (previously installed but no longer needed)
-echo "Removing orphan/obsolete files..."
+# 2. Remove orphan files
 for p in "${ORPHAN_PATHS[@]}"; do
   if [ -f "$LIBRENMS_ROOT/$p" ]; then
-    echo "  removing orphan: $p"
     rm -f "$LIBRENMS_ROOT/$p"
-  else
-    echo "  skip (not found): $p"
   fi
 done
 
-# 3. Clone repo (as librenms)
-echo "Cloning $REPO_URL (branch: $BRANCH)..."
-if ! sudo -u librenms bash -c "rm -rf $CLONE_DIR && git clone --depth 1 -b $BRANCH $REPO_URL $CLONE_DIR"; then
-  echo "ERROR: Failed to clone repository. Check network connectivity and repository URL."
-  echo "REPO_URL: $REPO_URL"
-  echo "BRANCH: $BRANCH"
-  echo "CLONE_DIR: $CLONE_DIR"
+# 3. Clone repo
+if ! sudo -u librenms bash -c "rm -rf $CLONE_DIR && git clone --depth 1 -b $BRANCH $REPO_URL $CLONE_DIR" > /dev/null 2>&1; then
+  echo "ERROR: Failed to clone repository from $REPO_URL (branch: $BRANCH)"
   exit 1
 fi
 
-# Verify clone was successful
 if [ ! -d "$CLONE_DIR/.git" ]; then
-  echo "ERROR: Clone directory does not exist or is not a git repository: $CLONE_DIR"
+  echo "ERROR: Clone failed - directory does not exist: $CLONE_DIR"
   exit 1
 fi
 
-echo "Repository cloned successfully to $CLONE_DIR"
-
-# Verify we have the latest version
 cd "$CLONE_DIR"
 LATEST_COMMIT=$(git rev-parse HEAD)
-echo "Latest commit: $LATEST_COMMIT"
 cd - > /dev/null
 
-# 4. Copy files into LibreNMS (as librenms)
-echo "Copying overlay files..."
-echo "Source directory: $CLONE_DIR"
-echo "Destination directory: $LIBRENMS_ROOT"
+echo "Downloaded to /tmp: $CLONE_DIR (commit: ${LATEST_COMMIT:0:7})"
 echo ""
+echo "Files copied to $LIBRENMS_ROOT:"
 
+# 4. Copy files into LibreNMS
 for p in "${PATHS[@]}"; do
   src="$CLONE_DIR/$p"
   dest="$LIBRENMS_ROOT/$p"
 
   if [ -f "$src" ]; then
-    echo "  copying: $p"
-    echo "    from: $src"
-    echo "    to: $dest"
-
-    # Create destination directory if it doesn't exist
     sudo -u librenms mkdir -p "$(dirname "$dest")"
-
-    # Copy the file
     if sudo -u librenms cp "$src" "$dest"; then
-      echo "    ✅ installed: $p"
+      echo "  $p"
     else
-      echo "    ❌ ERROR: Failed to copy $p"
+      echo "ERROR: Failed to copy $p"
       exit 1
     fi
   else
-    echo "  ⚠️  skip (not found in repo): $p"
-    echo "    expected at: $src"
-  fi
-  echo ""
-done
-
-echo "File copying complete."
-
-# 4.5. Verify installed files
-echo ""
-echo "Verifying installed files..."
-for p in "${PATHS[@]}"; do
-  dest="$LIBRENMS_ROOT/$p"
-  if [ -f "$dest" ]; then
-    timestamp=$(stat -c '%Y' "$dest" 2>/dev/null || stat -f '%m' "$dest" 2>/dev/null || echo "unknown")
-    echo "  ✅ verified: $p (timestamp: $timestamp)"
-  else
-    echo "  ❌ missing: $p"
+    echo "WARNING: Not found in repo: $p"
   fi
 done
 echo ""
 
-# 5. Update .gitignore so upstream git pull ignores our overlay (as librenms)
+# 5. Update .gitignore
 GITIGNORE="$LIBRENMS_ROOT/.gitignore"
-if sudo -u librenms grep -qF "$GITIGNORE_MARKER" "$GITIGNORE" 2>/dev/null; then
-  echo ".gitignore already contains overlay marker; skipping."
-else
-  echo "Appending overlay paths to .gitignore..."
+if ! sudo -u librenms grep -qF "$GITIGNORE_MARKER" "$GITIGNORE" 2>/dev/null; then
   sudo -u librenms bash -c "cat >> '$GITIGNORE' << 'GITIGNORE_EOF'
 
 $GITIGNORE_MARKER
@@ -204,70 +139,30 @@ resources/definitions/os_detection/brocade-stack.yaml
 resources/definitions/os_discovery/brocade-stack.yaml
 docs/brocade-stack-implementation.md
 GITIGNORE_EOF"
-  echo "  done."
 fi
 
-# 6. Clear ALL caches aggressively (critical for YAML definitions)
-echo "Clearing LibreNMS caches..."
+# 6. Clear caches
 cd "$LIBRENMS_ROOT"
-
-# Clear Laravel caches
-sudo -u librenms php artisan config:clear
-sudo -u librenms php artisan cache:clear
-sudo -u librenms php artisan view:clear
-
-# Clear LibreNMS-specific caches
-sudo -u librenms rm -rf bootstrap/cache/*
+sudo -u librenms php artisan config:clear > /dev/null 2>&1
+sudo -u librenms php artisan cache:clear > /dev/null 2>&1
+sudo -u librenms php artisan view:clear > /dev/null 2>&1
+sudo -u librenms rm -rf bootstrap/cache/* 2>/dev/null || true
 sudo -u librenms rm -f /tmp/*_librenms* 2>/dev/null || true
 sudo -u librenms rm -f /tmp/librenms* 2>/dev/null || true
-
-# Clear opcache and APCu if available
-sudo -u librenms php -r 'if (function_exists("opcache_reset")) { opcache_reset(); echo "Opcache cleared\n"; }' 2>/dev/null || true
-sudo -u librenms php -r 'if (function_exists("apcu_clear_cache")) { apcu_clear_cache(); echo "APCu cache cleared\n"; }' 2>/dev/null || true
-
-# Force clear any cached YAML or definition files
+sudo -u librenms php -r 'if (function_exists("opcache_reset")) { opcache_reset(); }' 2>/dev/null || true
+sudo -u librenms php -r 'if (function_exists("apcu_clear_cache")) { apcu_clear_cache(); }' 2>/dev/null || true
 sudo -u librenms find . -name "*.cache" -delete 2>/dev/null || true
 sudo -u librenms find . -name "*def*.php" -path "*/cache/*" -delete 2>/dev/null || true
+sudo -u librenms php artisan config:cache > /dev/null 2>&1
 
-# Rebuild config cache
-sudo -u librenms php artisan config:cache
-
-echo "Caches cleared aggressively"
-
-# 7. Check for migrations (no migrations needed for this OS)
-echo "Checking for database migrations..."
-echo "Note: This OS uses device_attribs only - no custom tables or migrations required"
-echo "✅ Skipping database migrations (not needed for brocade-stack OS)"
+# 7. Database migrations
+echo "Database: No migrations required (uses device_attribs only)"
 
 echo ""
-echo "🎉 DEPLOYMENT COMPLETE!"
+echo "DEPLOYMENT COMPLETE"
 echo ""
-echo "📁 Summary:"
-echo "  LibreNMS root: $LIBRENMS_ROOT"
-echo "  Backups saved: $BACKUP_DIR"
-echo "  Repository: $REPO_URL ($BRANCH)"
+echo "Next steps:"
+echo "  1. Restart services: sudo systemctl restart php*-fpm nginx"
+echo "  2. Test discovery: sudo -u librenms bash -c 'cd $LIBRENMS_ROOT && php discovery.php -h <device_id>'"
 echo ""
-echo "🔧 Next steps:"
-echo "  1. Restart PHP-FPM and web server:"
-echo "     sudo systemctl restart php*-fpm nginx"
-echo ""
-echo "  2. Test discovery on your devices:"
-echo "     sudo -u librenms bash -c 'cd $LIBRENMS_ROOT && php discovery.php -h <device_id>'"
-echo ""
-echo "  3. Check LibreNMS web interface for new sensors"
-echo ""
-echo "📝 Notes:"
-echo "  - Git pulls from upstream LibreNMS will ignore overlay files (.gitignore updated)"
-echo "  - All caches have been cleared aggressively"
-echo "  - No database migrations required (uses device_attribs only)"
-echo "  - Orphan files have been removed"
-
-echo ""
-echo "🔍 Verification Steps:"
-echo "  Run these commands to verify the deployment:"
-echo ""
-echo "  # Check that brocade-stack OS is available:"
-echo "  sudo -u librenms bash -c 'cd $LIBRENMS_ROOT && php -r \"echo \\\"Available OS: \\\"; \$os = include \\\"includes/definitions/os.php\\\"; echo isset(\$os['brocade-stack']) ? 'YES' : 'NO';\"'"
-echo ""
-echo "  # Test discovery on a device (replace DEVICE_ID):"
-echo "  sudo -u librenms bash -c 'cd $LIBRENMS_ROOT && php discovery.php -h DEVICE_ID -d' | head -20"
+echo "Backups saved to: $BACKUP_DIR"
