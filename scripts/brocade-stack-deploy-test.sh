@@ -9,15 +9,16 @@
 #   LIBRENMS_ROOT   LibreNMS install path (default: /opt/librenms)
 #   BACKUP_DIR      Where to backup replaced files (default: $LIBRENMS_ROOT/librenms-backups-test)
 #
-# This script deploys from the LOCAL repository's feature/poe-monitoring branch
+# This script deploys from GitHub's feature/poe-monitoring branch
 # for testing PoE monitoring functionality before merging to main.
 
 set -e
 
 LIBRENMS_ROOT="${LIBRENMS_ROOT:-/opt/librenms}"
 BACKUP_DIR="${BACKUP_DIR:-$LIBRENMS_ROOT/librenms-backups-test}"
-LOCAL_REPO_DIR="/Users/rob/Library/CloudStorage/Dropbox/scripts/librenms-customizations/librenms_mods"
+REPO_URL="https://github.com/hyper-focused/librenms-customizations.git"
 BRANCH="feature/poe-monitoring"
+CLONE_DIR="/tmp/librenms-customizations-test"
 
 # Paths we overlay (relative to LibreNMS root)
 PATHS=(
@@ -34,40 +35,9 @@ if [ ! -d "$LIBRENMS_ROOT" ]; then
   exit 1
 fi
 
-if [ ! -d "$LOCAL_REPO_DIR" ]; then
-  echo "Error: LOCAL_REPO_DIR=$LOCAL_REPO_DIR not found."
-  exit 1
-fi
-
-# Verify we're on the correct branch
-cd "$LOCAL_REPO_DIR"
-CURRENT_BRANCH=$(git branch --show-current)
-if [ "$CURRENT_BRANCH" != "$BRANCH" ]; then
-  echo "Error: Not on $BRANCH branch (currently on: $CURRENT_BRANCH)"
-  echo "Please run: git checkout $BRANCH"
-  exit 1
-fi
-
-# Check for uncommitted changes
-if ! git diff-index --quiet HEAD --; then
-  echo "Warning: You have uncommitted changes in the local repository."
-  echo "The deployment will use the current working tree state."
-  read -p "Continue? (y/N) " -n 1 -r
-  echo
-  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    exit 1
-  fi
-fi
-
-LATEST_COMMIT=$(git rev-parse HEAD)
-COMMIT_MSG=$(git log -1 --pretty=format:'%s')
-
-cd - > /dev/null
-
 echo "BROCADE-STACK TESTING DEPLOYMENT (PoE Branch)"
 echo ""
-echo "Source: $LOCAL_REPO_DIR ($BRANCH)"
-echo "Commit: ${LATEST_COMMIT:0:7} - $COMMIT_MSG"
+echo "Source: $REPO_URL ($BRANCH)"
 echo "Destination: $LIBRENMS_ROOT"
 echo "Backup: $BACKUP_DIR"
 echo ""
@@ -79,6 +49,25 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
   echo "Deployment cancelled."
   exit 0
 fi
+
+# Clone repo
+if ! sudo -u librenms bash -c "rm -rf $CLONE_DIR && git clone --depth 1 -b $BRANCH $REPO_URL $CLONE_DIR" > /dev/null 2>&1; then
+  echo "ERROR: Failed to clone repository from $REPO_URL (branch: $BRANCH)"
+  exit 1
+fi
+
+if [ ! -d "$CLONE_DIR/.git" ]; then
+  echo "ERROR: Clone failed - directory does not exist: $CLONE_DIR"
+  exit 1
+fi
+
+cd "$CLONE_DIR"
+LATEST_COMMIT=$(git rev-parse HEAD)
+COMMIT_MSG=$(git log -1 --pretty=format:'%s')
+cd - > /dev/null
+
+echo ""
+echo "Downloaded to /tmp: $CLONE_DIR (commit: ${LATEST_COMMIT:0:7})"
 
 # 1. Backup production files
 echo ""
@@ -93,9 +82,10 @@ for p in "${PATHS[@]}"; do
 done
 
 # 2. Deploy testing files
+echo ""
 echo "Files copied to $LIBRENMS_ROOT:"
 for p in "${PATHS[@]}"; do
-  src="$LOCAL_REPO_DIR/$p"
+  src="$CLONE_DIR/$p"
   dest="$LIBRENMS_ROOT/$p"
 
   if [ -f "$src" ]; then
@@ -107,8 +97,7 @@ for p in "${PATHS[@]}"; do
       exit 1
     fi
   else
-    echo "ERROR: Not found in local repo: $p"
-    exit 1
+    echo "WARNING: Not found in repo: $p"
   fi
 done
 echo ""
