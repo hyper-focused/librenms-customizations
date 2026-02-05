@@ -47,6 +47,7 @@ ORPHAN_PATHS=(
 )
 
 GITIGNORE_MARKER="# librenms-customizations overlay (ignore so upstream git pull does not overwrite)"
+GITIGNORE_MARKER_TEST="# librenms-customizations TEST overlay (feature/poe-monitoring)"
 
 if [ ! -d "$LIBRENMS_ROOT" ]; then
   echo "Error: LIBRENMS_ROOT=$LIBRENMS_ROOT not found."
@@ -58,6 +59,34 @@ echo "Backup dir:    $BACKUP_DIR"
 echo "Repo:          $REPO_URL ($BRANCH)"
 echo "Clone dir:     $CLONE_DIR"
 echo ""
+
+# 0. Check for and clean up any testing deployment artifacts
+GITIGNORE="$LIBRENMS_ROOT/.gitignore"
+if sudo -u librenms grep -qF "$GITIGNORE_MARKER_TEST" "$GITIGNORE" 2>/dev/null; then
+  echo "⚠️  DETECTED: Testing deployment artifacts from feature/poe-monitoring branch"
+  echo ""
+  echo "Cleaning up testing artifacts before production deployment..."
+  echo ""
+
+  # Remove TEST marker and associated paths from .gitignore
+  sudo -u librenms bash -c "
+    # Remove TEST marker and the 3 lines following it
+    sed -i.bak '/$GITIGNORE_MARKER_TEST/,+3d' '$GITIGNORE'
+    rm -f '${GITIGNORE}.bak'
+  "
+  echo "  ✅ Removed testing .gitignore entries"
+
+  # Check for testing backup directory and offer to remove
+  TEST_BACKUP_DIR="$LIBRENMS_ROOT/librenms-backups-test"
+  if [ -d "$TEST_BACKUP_DIR" ]; then
+    echo "  ℹ️  Found testing backup directory: $TEST_BACKUP_DIR"
+    echo "     (Will be preserved - remove manually if not needed)"
+  fi
+
+  echo ""
+  echo "Testing artifacts cleaned up. Proceeding with production deployment..."
+  echo ""
+fi
 
 # 1. Create backup dir and ensure librenms can write
 echo "Creating backup directory..."
