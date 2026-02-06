@@ -254,10 +254,11 @@ modules:
       data:
         # PoE Per-Unit Capacity - Maximum power available per unit
         # OID: .1.3.6.1.4.1.1991.1.1.2.14.4.1.1.2 (snAgentPoeUnitMaxPower)
-        # Units: Watts (no conversion needed)
+        # Units: milliwatts (converted to watts via divisor)
         # Only available on PoE-capable hardware
         # Using numerical OIDs because FOUNDRY-POE-MIB may not resolve on all systems
-        - oid: .1.3.6.1.4.1.1991.1.1.2.14.4.1.1
+        # Walk the TABLE (.4.1) not the ENTRY (.4.1.1) for proper index resolution
+        - oid: .1.3.6.1.4.1.1991.1.1.2.14.4.1
           value: .1.3.6.1.4.1.1991.1.1.2.14.4.1.1.2
           num_oid: '.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.2.{{ $index }}'
           descr: 'Unit {{ $index }} PoE Capacity'
@@ -268,10 +269,11 @@ modules:
 
         # PoE Per-Unit Consumption - Current power consumption per unit
         # OID: .1.3.6.1.4.1.1991.1.1.2.14.4.1.1.3 (snAgentPoeUnitConsumedPower)
-        # Units: Watts (no conversion needed)
+        # Units: milliwatts (converted to watts via divisor)
         # Only available on PoE-capable hardware
         # Using numerical OIDs because FOUNDRY-POE-MIB may not resolve on all systems
-        - oid: .1.3.6.1.4.1.1991.1.1.2.14.4.1.1
+        # Walk the TABLE (.4.1) not the ENTRY (.4.1.1) for proper index resolution
+        - oid: .1.3.6.1.4.1.1991.1.1.2.14.4.1
           value: .1.3.6.1.4.1.1991.1.1.2.14.4.1.1.3
           num_oid: '.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.3.{{ $index }}'
           descr: 'Unit {{ $index }} PoE Consumption'
