@@ -36,7 +36,7 @@ echo ""
 # List files to be restored
 echo "Files to be restored:"
 find "$BACKUP_DIR" -type f | while read -r f; do
-  rel="${f#$BACKUP_DIR/}"
+  rel="${f#"$BACKUP_DIR"/}"
   echo "  - $rel"
 done
 echo ""
@@ -54,7 +54,7 @@ echo "1️⃣  Restoring production files from backup..."
 restored_count=0
 find "$BACKUP_DIR" -type f | while read -r backup_file; do
   # Get relative path
-  rel_path="${backup_file#$BACKUP_DIR/}"
+  rel_path="${backup_file#"$BACKUP_DIR"/}"
   dest="$LIBRENMS_ROOT/$rel_path"
 
   echo "  📋 restoring: $rel_path"
@@ -86,8 +86,8 @@ if sudo -u librenms grep -qF "$GITIGNORE_MARKER" "$GITIGNORE" 2>/dev/null; then
 
   # Create temp file and remove the TEST section
   sudo -u librenms bash -c "
-    # Remove TEST marker and the 3 lines following it
-    sed -i.bak '/$GITIGNORE_MARKER/,+3d' '$GITIGNORE'
+    # Remove TEST marker and the 4 lines following it
+    sed -i.bak '/$GITIGNORE_MARKER/,+4d' '$GITIGNORE'
     rm -f '${GITIGNORE}.bak'
   "
 
@@ -118,7 +118,7 @@ echo "  ✅ Caches cleared"
 # 4. Restart services
 echo ""
 echo "4️⃣  Restarting services..."
-if systemctl list-units --type=service | grep -q php.*-fpm; then
+if systemctl list-units --type=service | grep -q 'php.*-fpm'; then
   systemctl restart php*-fpm
   echo "  ✅ PHP-FPM restarted"
 fi

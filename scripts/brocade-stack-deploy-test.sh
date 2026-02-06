@@ -23,10 +23,15 @@ CLONE_DIR="/tmp/librenms-customizations-test"
 # Paths we overlay (relative to LibreNMS root)
 PATHS=(
   "LibreNMS/OS/BrocadeStack.php"
-  "includes/discovery/brocade-stack.inc.php"
-  "includes/polling/brocade-stack.inc.php"
+  "includes/discovery/sensors/power/brocade-stack.inc.php"
   "resources/definitions/os_detection/brocade-stack.yaml"
   "resources/definitions/os_discovery/brocade-stack.yaml"
+)
+
+# Old file paths to remove from previous deployments
+ORPHAN_PATHS=(
+  "includes/discovery/brocade-stack.inc.php"
+  "includes/polling/brocade-stack.inc.php"
 )
 
 # Testing-specific .gitignore marker (different from production)
@@ -80,7 +85,15 @@ for p in "${PATHS[@]}"; do
   fi
 done
 
-# 2. Deploy testing files
+# 2. Remove orphan files from previous deployments
+for p in "${ORPHAN_PATHS[@]}"; do
+  if [ -f "$LIBRENMS_ROOT/$p" ]; then
+    rm -f "$LIBRENMS_ROOT/$p"
+    echo "  Removed orphan: $p"
+  fi
+done
+
+# 3. Deploy testing files
 echo ""
 echo "Files copied to $LIBRENMS_ROOT:"
 for p in "${PATHS[@]}"; do
@@ -108,8 +121,7 @@ if ! sudo -u librenms grep -qF "$GITIGNORE_MARKER" "$GITIGNORE" 2>/dev/null; the
 
 $GITIGNORE_MARKER
 LibreNMS/OS/BrocadeStack.php
-includes/discovery/brocade-stack.inc.php
-includes/polling/brocade-stack.inc.php
+includes/discovery/sensors/power/brocade-stack.inc.php
 resources/definitions/os_detection/brocade-stack.yaml
 resources/definitions/os_discovery/brocade-stack.yaml
 GITIGNORE_EOF"

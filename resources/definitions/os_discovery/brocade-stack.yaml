@@ -251,14 +251,9 @@ modules:
             - {value: 5, descr: standalone, graph: 0, generic: 0}
 
     # PoE Power Sensors
-    # All PoE sensor discovery is handled in PHP (LibreNMS/OS/BrocadeStack.php)
-    # Reason: YAML sensor discovery with numerical OIDs has index resolution issues
-    # when MIBs are loaded. PHP provides full control over SNMP queries and indexing.
+    # Handled in PHP: includes/discovery/sensors/power/brocade-stack.inc.php
+    # Reason: YAML has index resolution issues with numerical OIDs when MIBs
+    # are loaded, and port linking requires complex ifIndex mapping.
     #
-    # Per-Unit Sensors (overview page):
-    #   - Unit X PoE Capacity (from snAgentPoeUnitMaxPower)
-    #   - Unit X PoE Consumption (from snAgentPoeUnitConsumedPower)
-    #
-    # Per-Port Sensors (port pages):
-    #   - Port X/Y/Z PoE Limit (from snAgentPoePortWattage)
-    #   - Port X/Y/Z PoE Consumption (from snAgentPoePortConsumed)
+    # Per-Unit: Unit X PoE Capacity/Consumption (snAgentPoeUnitTable)
+    # Per-Port: Port X PoE Limit/Consumption (snAgentPoePortTable, linked to port pages)

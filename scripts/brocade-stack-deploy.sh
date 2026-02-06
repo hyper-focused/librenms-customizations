@@ -25,8 +25,7 @@ CLONE_DIR="/tmp/librenms-customizations"
 # Paths we overlay (relative to LibreNMS root)
 PATHS=(
   "LibreNMS/OS/BrocadeStack.php"
-  "includes/discovery/brocade-stack.inc.php"
-  "includes/polling/brocade-stack.inc.php"
+  "includes/discovery/sensors/power/brocade-stack.inc.php"
   "resources/definitions/os_detection/brocade-stack.yaml"
   "resources/definitions/os_discovery/brocade-stack.yaml"
   "docs/brocade-stack-implementation.md"
@@ -42,6 +41,8 @@ ORPHAN_PATHS=(
   "database/migrations/2026_01_17_000002_rename_ironware_to_brocade_stack_tables.php"
   "database/migrations/2026_01_17_000001_add_brocade_stack_tables.php"
   "database/migrations/2025_01_17_120000_add_brocade_stack_tables.php"
+  "includes/discovery/brocade-stack.inc.php"
+  "includes/polling/brocade-stack.inc.php"
 )
 
 GITIGNORE_MARKER="# librenms-customizations overlay (ignore so upstream git pull does not overwrite)"
@@ -60,7 +61,7 @@ GITIGNORE="$LIBRENMS_ROOT/.gitignore"
 if sudo -u librenms grep -qF "$GITIGNORE_MARKER_TEST" "$GITIGNORE" 2>/dev/null; then
   echo "Detected testing deployment artifacts - cleaning up..."
   sudo -u librenms bash -c "
-    sed -i.bak '/$GITIGNORE_MARKER_TEST/,+3d' '$GITIGNORE'
+    sed -i.bak '/$GITIGNORE_MARKER_TEST/,+4d' '$GITIGNORE'
     rm -f '${GITIGNORE}.bak'
   "
   TEST_BACKUP_DIR="$LIBRENMS_ROOT/librenms-backups-test"
@@ -133,8 +134,7 @@ if ! sudo -u librenms grep -qF "$GITIGNORE_MARKER" "$GITIGNORE" 2>/dev/null; the
 
 $GITIGNORE_MARKER
 LibreNMS/OS/BrocadeStack.php
-includes/discovery/brocade-stack.inc.php
-includes/polling/brocade-stack.inc.php
+includes/discovery/sensors/power/brocade-stack.inc.php
 resources/definitions/os_detection/brocade-stack.yaml
 resources/definitions/os_discovery/brocade-stack.yaml
 docs/brocade-stack-implementation.md
