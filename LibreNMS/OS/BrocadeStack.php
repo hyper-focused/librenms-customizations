@@ -67,13 +67,20 @@ class BrocadeStack extends OS implements ProcessorDiscovery
      */
     public function discoverSensors(): array
     {
+        echo "DEBUG: BrocadeStack discoverSensors() called\n";
         $sensors = [
             'power' => [],
         ];
 
+        echo "DEBUG: Calling discoverPoeUnitSensors\n";
         $this->discoverPoeUnitSensors($sensors['power']);
-        $this->discoverPoePortSensors($sensors['power']);
+        echo "DEBUG: Unit sensors complete, power array has " . count($sensors['power']) . " items\n";
 
+        echo "DEBUG: Calling discoverPoePortSensors\n";
+        $this->discoverPoePortSensors($sensors['power']);
+        echo "DEBUG: Port sensors complete, power array has " . count($sensors['power']) . " items\n";
+
+        echo "DEBUG: Returning sensors array\n";
         return $sensors;
     }
 
@@ -832,6 +839,7 @@ class BrocadeStack extends OS implements ProcessorDiscovery
      */
     private function discoverPoeUnitSensors(array &$valid): void
     {
+        echo "DEBUG: discoverPoeUnitSensors() called\n";
         $device = $this->getDevice();
 
         // Walk individual columns of the PoE unit table
@@ -843,8 +851,11 @@ class BrocadeStack extends OS implements ProcessorDiscovery
         $maxPower = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.2')->values();
         $consumedPower = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.3')->values();
 
+        echo "DEBUG: Unit SNMP walks complete - maxPower: " . count($maxPower) . ", consumed: " . count($consumedPower) . "\n";
+
         if (empty($maxPower) && empty($consumedPower)) {
             // No PoE data available - non-PoE hardware
+            echo "DEBUG: No unit PoE data, returning\n";
             return;
         }
 
@@ -935,6 +946,7 @@ class BrocadeStack extends OS implements ProcessorDiscovery
      */
     private function discoverPoePortSensors(array &$valid): void
     {
+        echo "DEBUG: discoverPoePortSensors() called\n";
         $device = $this->getDevice();
 
         // Walk individual columns of the PoE port table
@@ -950,9 +962,12 @@ class BrocadeStack extends OS implements ProcessorDiscovery
         $poeWattage = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.3')->values();
         $poeConsumed = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.6')->values();
 
+        echo "DEBUG: Port SNMP walks complete - portIndex: " . count($poePortIndex) . ", status: " . count($poeStatus) . ", wattage: " . count($poeWattage) . ", consumed: " . count($poeConsumed) . "\n";
+
         if (empty($poePortIndex) || (empty($poeStatus) && empty($poeWattage) && empty($poeConsumed))) {
             // No PoE data available - either non-PoE hardware or table doesn't exist
             // This gracefully handles all non-PoE scenarios including mixed stacks
+            echo "DEBUG: No port PoE data, returning\n";
             return;
         }
 
