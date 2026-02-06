@@ -55,8 +55,26 @@ class BrocadeStack extends OS implements ProcessorDiscovery
 
         $this->rewriteHardware(); // Translate hardware names
         $this->discoverStackTopology(); // Enhanced stack discovery
-        $this->discoverPoeUnitSensors(); // PoE per-unit sensors (capacity/consumption)
-        $this->discoverPoePortSensors(); // PoE per-port sensors
+    }
+
+    /**
+     * Discover sensors (PoE power monitoring)
+     *
+     * Implements LibreNMS sensor discovery framework.
+     * Initializes $valid array and calls sensor discovery methods.
+     *
+     * @return array Sensor arrays by class
+     */
+    public function discoverSensors(): array
+    {
+        $sensors = [
+            'power' => [],
+        ];
+
+        $this->discoverPoeUnitSensors($sensors['power']);
+        $this->discoverPoePortSensors($sensors['power']);
+
+        return $sensors;
     }
 
     /**
@@ -809,9 +827,10 @@ class BrocadeStack extends OS implements ProcessorDiscovery
      * Using PHP instead of YAML because YAML sensor discovery doesn't handle
      * numerical OIDs correctly when MIBs are loaded (index calculation issues).
      *
+     * @param array &$valid Reference to valid sensors array
      * @return void
      */
-    private function discoverPoeUnitSensors(): void
+    private function discoverPoeUnitSensors(array &$valid): void
     {
         $device = $this->getDevice();
 
@@ -846,7 +865,7 @@ class BrocadeStack extends OS implements ProcessorDiscovery
                 $capacityOid = '.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.2.' . $index;
 
                 discover_sensor(
-                    $valid = null,
+                    $valid,
                     'power',
                     $device,
                     $capacityOid,
@@ -872,7 +891,7 @@ class BrocadeStack extends OS implements ProcessorDiscovery
                 $consumedOid = '.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.3.' . $index;
 
                 discover_sensor(
-                    $valid = null,
+                    $valid,
                     'power',
                     $device,
                     $consumedOid,
@@ -909,9 +928,10 @@ class BrocadeStack extends OS implements ProcessorDiscovery
      * - Unit 2: ifIndex 1025-1072
      * - Unit 3: ifIndex 2049-2096, etc.
      *
+     * @param array &$valid Reference to valid sensors array
      * @return void
      */
-    private function discoverPoePortSensors(): void
+    private function discoverPoePortSensors(array &$valid): void
     {
         $device = $this->getDevice();
 
@@ -985,7 +1005,7 @@ class BrocadeStack extends OS implements ProcessorDiscovery
             $wattage = $poeWattage[$wattageOid] ?? null;
             if ($wattage !== null && is_numeric($wattage) && $wattage > 0) {
                 discover_sensor(
-                    $valid = null,
+                    $valid,
                     'power',
                     $device,
                     $wattageOid,  // Already built above
@@ -1011,7 +1031,7 @@ class BrocadeStack extends OS implements ProcessorDiscovery
             $consumed = $poeConsumed[$consumedOid] ?? null;
             if ($consumed !== null && is_numeric($consumed)) {
                 discover_sensor(
-                    $valid = null,
+                    $valid,
                     'power',
                     $device,
                     $consumedOid,
