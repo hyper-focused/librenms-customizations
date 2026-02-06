@@ -824,8 +824,10 @@ class BrocadeStack extends OS implements ProcessorDiscovery
         $device = $this->getDevice();
 
         // Get all PoE port data from FOUNDRY-POE-MIB
+        // Using numerical OID because FOUNDRY-POE-MIB may not resolve on all systems
+        // OID .1.3.6.1.4.1.1991.1.1.2.14.2.2 = snAgentPoePortTable
         // This table walk is stack-aware and only returns PoE-capable ports
-        $poePortData = \SnmpQuery::walk('FOUNDRY-POE-MIB::snAgentPoePortTable')->table();
+        $poePortData = \SnmpQuery::walk('.1.3.6.1.4.1.1991.1.1.2.14.2.2')->table();
 
         if (empty($poePortData)) {
             // No PoE data available - either non-PoE hardware or table doesn't exist
@@ -851,20 +853,20 @@ class BrocadeStack extends OS implements ProcessorDiscovery
             $port = $portMap[$index];
             $portLabel = $port->ifDescr ?: "Port {$index}";
 
-            // Check port PoE status (OID .2)
+            // Check port PoE status (column .2 = snAgentPoePortControl)
             // 1=notCapable, 2=disabled, 3=enabled, 4=legacyEnabled
-            // Field name from SNMP: snAgentPoePortControl
-            $poeStatus = $data['snAgentPoePortControl'] ?? 1;
+            // Using numerical index because we're using numerical OIDs
+            $poeStatus = $data[2] ?? 1;
 
             // Skip non-PoE capable ports (status = 1)
             if ($poeStatus == 1) {
                 continue;
             }
 
-            // PoE Port Allocated Limit (OID .3, not .4!)
+            // PoE Port Allocated Limit (column .3 = snAgentPoePortWattage)
             // Units: milliwatts, convert to watts
-            // Field name from SNMP: snAgentPoePortWattage
-            $wattage = $data['snAgentPoePortWattage'] ?? null;
+            // Using numerical index because we're using numerical OIDs
+            $wattage = $data[3] ?? null;
             if ($wattage !== null && is_numeric($wattage)) {
                 $wattageOid = '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.3.' . $index;
 
@@ -890,10 +892,10 @@ class BrocadeStack extends OS implements ProcessorDiscovery
                 );
             }
 
-            // PoE Port Current Consumption (OID .6, not .5!)
+            // PoE Port Current Consumption (column .6 = snAgentPoePortConsumed)
             // Units: milliwatts, convert to watts
-            // Field name from SNMP: snAgentPoePortConsumed
-            $consumed = $data['snAgentPoePortConsumed'] ?? null;
+            // Using numerical index because we're using numerical OIDs
+            $consumed = $data[6] ?? null;
             if ($consumed !== null && is_numeric($consumed)) {
                 $consumedOid = '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.6.' . $index;
 
