@@ -28,6 +28,18 @@ PATHS=(
   "includes/discovery/sensors/power/brocade-stack.inc.php"
   "resources/definitions/os_detection/brocade-stack.yaml"
   "resources/definitions/os_discovery/brocade-stack.yaml"
+  "includes/html/pages/device/overview/poe.inc.php"
+  "includes/html/pages/device/overview.inc.php"
+  "includes/html/pages/device/overview/sensors/power.inc.php"
+  "includes/html/pages/device/overview/generic/sensor.inc.php"
+  "includes/html/pages/device/health/power.inc.php"
+  "includes/html/pages/device/health/sensors.inc.php"
+  "includes/html/pages/device/port.inc.php"
+  "includes/html/pages/device/port/sensors.inc.php"
+  "includes/html/pages/device/port/poe.inc.php"
+  "app/Http/Controllers/Device/Tabs/PortsController.php"
+  "resources/views/device/tabs/ports.blade.php"
+  "resources/views/device/tabs/ports/poe.blade.php"
   "docs/brocade-stack-implementation.md"
 )
 
@@ -61,7 +73,7 @@ GITIGNORE="$LIBRENMS_ROOT/.gitignore"
 if sudo -u librenms grep -qF "$GITIGNORE_MARKER_TEST" "$GITIGNORE" 2>/dev/null; then
   echo "Detected testing deployment artifacts - cleaning up..."
   sudo -u librenms bash -c "
-    sed -i.bak '/$GITIGNORE_MARKER_TEST/,+4d' '$GITIGNORE'
+    sed -i.bak '/$GITIGNORE_MARKER_TEST/,+7d' '$GITIGNORE'
     rm -f '${GITIGNORE}.bak'
   "
   TEST_BACKUP_DIR="$LIBRENMS_ROOT/librenms-backups-test"
@@ -137,6 +149,9 @@ LibreNMS/OS/BrocadeStack.php
 includes/discovery/sensors/power/brocade-stack.inc.php
 resources/definitions/os_detection/brocade-stack.yaml
 resources/definitions/os_discovery/brocade-stack.yaml
+includes/html/pages/device/overview/poe.inc.php
+includes/html/pages/device/port/poe.inc.php
+resources/views/device/tabs/ports/poe.blade.php
 docs/brocade-stack-implementation.md
 GITIGNORE_EOF"
 fi

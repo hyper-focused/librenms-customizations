@@ -26,6 +26,18 @@ PATHS=(
   "includes/discovery/sensors/power/brocade-stack.inc.php"
   "resources/definitions/os_detection/brocade-stack.yaml"
   "resources/definitions/os_discovery/brocade-stack.yaml"
+  "includes/html/pages/device/overview/poe.inc.php"
+  "includes/html/pages/device/overview.inc.php"
+  "includes/html/pages/device/overview/sensors/power.inc.php"
+  "includes/html/pages/device/overview/generic/sensor.inc.php"
+  "includes/html/pages/device/health/power.inc.php"
+  "includes/html/pages/device/health/sensors.inc.php"
+  "includes/html/pages/device/port.inc.php"
+  "includes/html/pages/device/port/sensors.inc.php"
+  "includes/html/pages/device/port/poe.inc.php"
+  "app/Http/Controllers/Device/Tabs/PortsController.php"
+  "resources/views/device/tabs/ports.blade.php"
+  "resources/views/device/tabs/ports/poe.blade.php"
 )
 
 # Old file paths to remove from previous deployments
@@ -114,7 +126,7 @@ for p in "${PATHS[@]}"; do
 done
 echo ""
 
-# 3. Update .gitignore
+# 4. Update .gitignore (only custom files not in upstream LibreNMS)
 GITIGNORE="$LIBRENMS_ROOT/.gitignore"
 if ! sudo -u librenms grep -qF "$GITIGNORE_MARKER" "$GITIGNORE" 2>/dev/null; then
   sudo -u librenms bash -c "cat >> '$GITIGNORE' << 'GITIGNORE_EOF'
@@ -124,10 +136,13 @@ LibreNMS/OS/BrocadeStack.php
 includes/discovery/sensors/power/brocade-stack.inc.php
 resources/definitions/os_detection/brocade-stack.yaml
 resources/definitions/os_discovery/brocade-stack.yaml
+includes/html/pages/device/overview/poe.inc.php
+includes/html/pages/device/port/poe.inc.php
+resources/views/device/tabs/ports/poe.blade.php
 GITIGNORE_EOF"
 fi
 
-# 4. Clear caches
+# 5. Clear caches
 cd "$LIBRENMS_ROOT"
 sudo -u librenms php artisan config:clear > /dev/null 2>&1
 sudo -u librenms php artisan cache:clear > /dev/null 2>&1
@@ -141,7 +156,7 @@ sudo -u librenms find . -name "*.cache" -delete 2>/dev/null || true
 sudo -u librenms find . -name "*def*.php" -path "*/cache/*" -delete 2>/dev/null || true
 sudo -u librenms php artisan config:cache > /dev/null 2>&1
 
-# 5. Restart services
+# 6. Restart services
 if systemctl list-units --type=service | grep -q "php.*-fpm" 2>/dev/null; then
   systemctl restart "php*-fpm" 2>/dev/null || true
 fi

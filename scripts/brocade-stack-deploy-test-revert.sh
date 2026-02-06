@@ -11,6 +11,14 @@ LIBRENMS_ROOT="${LIBRENMS_ROOT:-/opt/librenms}"
 BACKUP_DIR="${BACKUP_DIR:-$LIBRENMS_ROOT/librenms-backups-test}"
 GITIGNORE_MARKER="# librenms-customizations TEST overlay (feature/poe-monitoring)"
 
+# Files created by test deployment that don't exist in upstream LibreNMS
+# (no backups — must be deleted on revert)
+NEW_FILES=(
+  "includes/html/pages/device/overview/poe.inc.php"
+  "includes/html/pages/device/port/poe.inc.php"
+  "resources/views/device/tabs/ports/poe.blade.php"
+)
+
 if [ ! -d "$LIBRENMS_ROOT" ]; then
   echo "Error: LIBRENMS_ROOT=$LIBRENMS_ROOT not found."
   exit 1
@@ -77,6 +85,16 @@ done
 
 echo "  ✅ Restored files from backup"
 
+# 1b. Remove new files created by test deployment (no upstream originals to restore)
+echo ""
+echo "  Removing test-only files..."
+for p in "${NEW_FILES[@]}"; do
+  if [ -f "$LIBRENMS_ROOT/$p" ]; then
+    rm -f "$LIBRENMS_ROOT/$p"
+    echo "  🗑️  removed: $p"
+  fi
+done
+
 # 2. Remove TEST marker from .gitignore
 GITIGNORE="$LIBRENMS_ROOT/.gitignore"
 echo ""
@@ -86,8 +104,8 @@ if sudo -u librenms grep -qF "$GITIGNORE_MARKER" "$GITIGNORE" 2>/dev/null; then
 
   # Create temp file and remove the TEST section
   sudo -u librenms bash -c "
-    # Remove TEST marker and the 4 lines following it
-    sed -i.bak '/$GITIGNORE_MARKER/,+4d' '$GITIGNORE'
+    # Remove TEST marker and the 7 lines following it
+    sed -i.bak '/$GITIGNORE_MARKER/,+7d' '$GITIGNORE'
     rm -f '${GITIGNORE}.bak'
   "
 
