@@ -959,12 +959,20 @@ class BrocadeStack extends OS implements ProcessorDiscovery
             array_keys($poeConsumed)
         ));
 
+        echo "Processing " . count($allPortOids) . " port OIDs\n";
+        $processedCount = 0;
+        $skippedNoPort = 0;
+        $skippedStatus = 0;
+        $sensorsCreated = 0;
+
         foreach ($allPortOids as $oid) {
             // Extract ifIndex from OID (last component after final dot)
             $index = (int) substr($oid, strrpos($oid, '.') + 1);
+            $processedCount++;
 
             // Check if we have a matching port in LibreNMS
             if (!isset($portMap[$index])) {
+                $skippedNoPort++;
                 continue;
             }
 
@@ -977,14 +985,26 @@ class BrocadeStack extends OS implements ProcessorDiscovery
 
             // Skip non-PoE capable ports (status = 1)
             if ($status == 1) {
+                $skippedStatus++;
                 continue;
+            }
+
+            if ($index <= 2) {
+                echo "Port $index: status=$status, oid=$oid\n";
             }
 
             // PoE Port Allocated Limit (snAgentPoePortWattage)
             // Units: milliwatts, convert to watts with divisor 1000
             $wattage = $poeWattage[$oid] ?? null;
+            if ($index <= 2) {
+                echo "  Wattage: $wattage\n";
+            }
             if ($wattage !== null && is_numeric($wattage) && $wattage > 0) {
                 $wattageOid = '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.3.' . $index;
+                $sensorsCreated++;
+                if ($index <= 2) {
+                    echo "  Creating wattage sensor\n";
+                }
 
                 discover_sensor(
                     $valid = null,
@@ -1036,6 +1056,13 @@ class BrocadeStack extends OS implements ProcessorDiscovery
                 );
             }
         }
+
+        echo "\n=== Port Sensor Summary ===\n";
+        echo "Total OIDs processed: $processedCount\n";
+        echo "Skipped (no port match): $skippedNoPort\n";
+        echo "Skipped (status = 1): $skippedStatus\n";
+        echo "Sensors created: $sensorsCreated\n";
+        echo "\n";
     }
 
     /**
