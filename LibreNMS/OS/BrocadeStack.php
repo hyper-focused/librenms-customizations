@@ -820,12 +820,24 @@ class BrocadeStack extends OS implements ProcessorDiscovery
         // Using numeric() to get proper table structure with numerical indices
         $poeUnitData = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.4.1.1')->table(1);
 
+        echo "\n=== PoE Unit Discovery Debug ===\n";
+        echo "Empty check: " . (empty($poeUnitData) ? "YES (returning early)" : "NO") . "\n";
+        echo "Array count: " . count($poeUnitData) . "\n";
+        echo "Array keys: " . implode(', ', array_keys($poeUnitData)) . "\n";
+        echo "Full structure:\n";
+        print_r($poeUnitData);
+        echo "\n";
+
         if (empty($poeUnitData)) {
             // No PoE data available - non-PoE hardware
             return;
         }
 
         foreach ($poeUnitData as $index => $data) {
+            echo "Processing index: $index\n";
+            echo "Data type: " . gettype($data) . "\n";
+            echo "Data structure: " . print_r($data, true) . "\n";
+
             // Index is the unit number (1, 2, 3, etc.)
             $unitNum = $index;
 
