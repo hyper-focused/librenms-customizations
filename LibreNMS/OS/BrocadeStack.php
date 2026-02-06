@@ -55,6 +55,7 @@ class BrocadeStack extends OS implements ProcessorDiscovery
 
         $this->rewriteHardware(); // Translate hardware names
         $this->discoverStackTopology(); // Enhanced stack discovery
+        $this->discoverPoeUnitSensors(); // PoE per-unit sensors (capacity/consumption)
         $this->discoverPoePortSensors(); // PoE per-port sensors
     }
 
@@ -800,6 +801,89 @@ class BrocadeStack extends OS implements ProcessorDiscovery
     }
 
     /**
+     * Discover per-unit PoE sensors
+     *
+     * Discovers PoE power capacity and consumption for each stack unit.
+     * These sensors appear on the device overview page.
+     *
+     * Using PHP instead of YAML because YAML sensor discovery doesn't handle
+     * numerical OIDs correctly when MIBs are loaded (index calculation issues).
+     *
+     * @return void
+     */
+    private function discoverPoeUnitSensors(): void
+    {
+        $device = $this->getDevice();
+
+        // Walk the PoE unit table
+        // OID .1.3.6.1.4.1.1991.1.1.2.14.4.1.1 = snAgentPoeUnitEntry
+        // Columns: .1 = index, .2 = maxPower, .3 = consumedPower, .4 = type
+        $poeUnitData = \SnmpQuery::walk('.1.3.6.1.4.1.1991.1.1.2.14.4.1.1')->table();
+
+        if (empty($poeUnitData)) {
+            // No PoE data available - non-PoE hardware
+            return;
+        }
+
+        foreach ($poeUnitData as $index => $data) {
+            // Index should be the unit number (1, 2, 3, etc.)
+            $unitNum = $data[1] ?? $index;
+
+            // PoE Unit Capacity (column .2 = snAgentPoeUnitMaxPower)
+            // Units: milliwatts, convert to watts
+            $capacity = $data[2] ?? null;
+            if ($capacity !== null && is_numeric($capacity)) {
+                $capacityOid = '.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.2.' . $index;
+
+                discover_sensor(
+                    $valid = null,
+                    'power',
+                    $device,
+                    $capacityOid,
+                    "poe-unit-capacity-{$index}",
+                    'brocade-poe',
+                    "Unit {$unitNum} PoE Capacity",
+                    1000,  // divisor: mW to W
+                    1,
+                    0,
+                    null, null, null,
+                    $capacity,
+                    'sensor',
+                    null,  // no port_id (unit-level sensor)
+                    null,
+                    'PoE Power Budget'
+                );
+            }
+
+            // PoE Unit Consumption (column .3 = snAgentPoeUnitConsumedPower)
+            // Units: milliwatts, convert to watts
+            $consumed = $data[3] ?? null;
+            if ($consumed !== null && is_numeric($consumed)) {
+                $consumedOid = '.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.3.' . $index;
+
+                discover_sensor(
+                    $valid = null,
+                    'power',
+                    $device,
+                    $consumedOid,
+                    "poe-unit-consumption-{$index}",
+                    'brocade-poe',
+                    "Unit {$unitNum} PoE Consumption",
+                    1000,  // divisor: mW to W
+                    1,
+                    0,
+                    null, null, null,
+                    $consumed,
+                    'sensor',
+                    null,  // no port_id (unit-level sensor)
+                    null,
+                    'PoE Power Budget'
+                );
+            }
+        }
+    }
+
+    /**
      * Discover per-port PoE sensors
      *
      * Discovers PoE power consumption and limits for each port.
@@ -814,8 +898,6 @@ class BrocadeStack extends OS implements ProcessorDiscovery
      * - Unit 1: ifIndex 1-48
      * - Unit 2: ifIndex 1025-1072
      * - Unit 3: ifIndex 2049-2096, etc.
-     *
-     * Per-unit sensors are handled by YAML (snAgentPoeUnitTable).
      *
      * @return void
      */
