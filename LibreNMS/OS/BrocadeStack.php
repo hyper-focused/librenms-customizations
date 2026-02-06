@@ -800,97 +800,22 @@ class BrocadeStack extends OS implements ProcessorDiscovery
     }
 
     /**
-     * Check if hardware is PoE-capable
-     *
-     * Primary method: Check sysObjectID against known PoE models
-     * Fallback method: Pattern match hardware string for PoE indicators
-     *
-     * This two-tier approach ensures:
-     * - Reliable detection for known models via sysObjectID
-     * - Future-proofing via pattern matching for new/unknown models
-     * - Handles edge cases like ICX8200-48PF (P not at end)
-     *
-     * @return bool
-     */
-    private function isPoeCapable(): bool
-    {
-        $device = $this->getDevice();
-
-        // Method 1: Check sysObjectID for known PoE model OIDs
-        // This is the most reliable method
-        $sysObjectID = $device->sysObjectID ?? '';
-
-        // Known PoE model OID patterns from FOUNDRY-SN-ROOT-MIB
-        // These are the OID suffixes for PoE-capable models
-        $poeObjectIDs = [
-            // FCX Series PoE
-            '.1.3.6.1.4.1.1991.1.3.54.1.1.2', // snFCX624SHPOESwitch
-            '.1.3.6.1.4.1.1991.1.3.54.1.1.3', // snFCX648SHPOESwitch
-
-            // ICX 6430 Series PoE
-            '.1.3.6.1.4.1.1991.1.3.56.1.1.2', // snICX643024HPOESwitch
-            '.1.3.6.1.4.1.1991.1.3.56.1.1.4', // snICX643048HPOESwitch
-
-            // ICX 6450 Series PoE
-            '.1.3.6.1.4.1.1991.1.3.56.2.1.2', // snICX645024HPOESwitch
-            '.1.3.6.1.4.1.1991.1.3.56.2.1.4', // snICX645048HPOESwitch
-
-            // ICX 6610 Series PoE
-            '.1.3.6.1.4.1.1991.1.3.56.3.1.2', // snICX661024HPOESwitch
-            '.1.3.6.1.4.1.1991.1.3.56.3.1.5', // snICX661048HPOESwitch
-
-            // ICX 7150 Series PoE
-            '.1.3.6.1.4.1.1991.1.3.59.1.1.2', // snICX715024POESwitch
-            '.1.3.6.1.4.1.1991.1.3.59.1.1.5', // snICX715048POESwitch
-            '.1.3.6.1.4.1.1991.1.3.59.1.1.6', // snICX7150C12POESwitch
-            '.1.3.6.1.4.1.1991.1.3.59.1.1.7', // snICX7150C08PSwitch
-
-            // ICX 7250 Series PoE
-            '.1.3.6.1.4.1.1991.1.3.59.2.1.2', // snICX725024HPOESwitch
-            '.1.3.6.1.4.1.1991.1.3.59.2.1.5', // snICX725048HPOESwitch
-
-            // ICX 7450 Series PoE
-            '.1.3.6.1.4.1.1991.1.3.59.3.1.2', // snICX745024HPOESwitch
-            '.1.3.6.1.4.1.1991.1.3.59.3.1.4', // snICX745048HPOESwitch
-
-            // ICX 7550/8200 Series PoE (future models)
-            // Pattern: any OID containing these series with P suffix variants
-        ];
-
-        // Check if sysObjectID matches any known PoE model
-        foreach ($poeObjectIDs as $poeOID) {
-            if (strpos($sysObjectID, $poeOID) !== false) {
-                return true;
-            }
-        }
-
-        // Method 2: Pattern match hardware string (fallback for unknown models)
-        // This provides future-proofing for new PoE models not yet in OID list
-        $hardware = $device->hardware ?? '';
-
-        if (empty($hardware)) {
-            return false;
-        }
-
-        // Check for PoE indicators in hardware string
-        // Patterns: -POE, -HPOE, PoE+, or "P" near end (with flexibility for PF, etc.)
-        if (preg_match('/(POE|PoE\+?|HPOE|-P\b|\bP\b.*PoE|PoE)/i', $hardware)) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
      * Discover per-port PoE sensors
      *
      * Discovers PoE power consumption and limits for each port.
      * Sensors are linked to individual port pages via port_id.
-     * Only runs on PoE-capable hardware (gracefully skips if table doesn't exist).
      *
-     * Hardware-based filtering:
-     * - Models ending with -POE, -HPOE, or P are PoE-capable
-     * - All other models skip PoE discovery entirely
+     * FOUNDRY-POE-MIB is stack-aware and handles all configurations:
+     * - All-PoE stack: Returns data for all units
+     * - Mixed stack: Returns data only for PoE-capable units (e.g., master non-PoE, members PoE)
+     * - Non-PoE hardware: Table returns empty, gracefully exits
+     *
+     * The snAgentPoePortTable is indexed by ifIndex which is continuous across stacks:
+     * - Unit 1: ifIndex 1-48
+     * - Unit 2: ifIndex 1025-1072
+     * - Unit 3: ifIndex 2049-2096, etc.
+     *
+     * Per-unit sensors are handled by YAML (snAgentPoeUnitTable).
      *
      * @return void
      */
@@ -898,16 +823,13 @@ class BrocadeStack extends OS implements ProcessorDiscovery
     {
         $device = $this->getDevice();
 
-        // Skip PoE discovery for non-PoE hardware based on model name
-        if (!$this->isPoeCapable()) {
-            return;
-        }
-
         // Get all PoE port data from FOUNDRY-POE-MIB
+        // This table walk is stack-aware and only returns PoE-capable ports
         $poePortData = \SnmpQuery::walk('FOUNDRY-POE-MIB::snAgentPoePortTable')->table();
 
         if (empty($poePortData)) {
-            // No PoE data available (non-PoE hardware or unsupported)
+            // No PoE data available - either non-PoE hardware or table doesn't exist
+            // This gracefully handles all non-PoE scenarios including mixed stacks
             return;
         }
 
