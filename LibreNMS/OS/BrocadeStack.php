@@ -926,15 +926,6 @@ class BrocadeStack extends OS implements ProcessorDiscovery
         $poeWattage = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.3')->values();
         $poeConsumed = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.6')->values();
 
-        echo "\n=== PoE Port Discovery Debug ===\n";
-        echo "Status array count: " . count($poeStatus) . "\n";
-        echo "Wattage array count: " . count($poeWattage) . "\n";
-        echo "Consumed array count: " . count($poeConsumed) . "\n";
-        if (!empty($poeWattage)) {
-            echo "Wattage sample (first 5): " . print_r(array_slice($poeWattage, 0, 5, true), true) . "\n";
-        }
-        echo "\n";
-
         if (empty($poeStatus) && empty($poeWattage) && empty($poeConsumed)) {
             // No PoE data available - either non-PoE hardware or table doesn't exist
             // This gracefully handles all non-PoE scenarios including mixed stacks
@@ -959,12 +950,6 @@ class BrocadeStack extends OS implements ProcessorDiscovery
             array_keys($poeConsumed)
         ));
 
-        echo "Processing " . count($allPortOids) . " port OIDs\n";
-        $processedCount = 0;
-        $skippedNoPort = 0;
-        $skippedStatus = 0;
-        $sensorsCreated = 0;
-
         // Process each unique port index
         $uniqueIndices = [];
         foreach ($allPortOids as $oid) {
@@ -973,11 +958,8 @@ class BrocadeStack extends OS implements ProcessorDiscovery
         }
 
         foreach (array_keys($uniqueIndices) as $index) {
-            $processedCount++;
-
             // Check if we have a matching port in LibreNMS
             if (!isset($portMap[$index])) {
-                $skippedNoPort++;
                 continue;
             }
 
@@ -995,26 +977,13 @@ class BrocadeStack extends OS implements ProcessorDiscovery
 
             // Skip non-PoE capable ports (status = 1)
             if ($status == 1) {
-                $skippedStatus++;
                 continue;
-            }
-
-            if ($index <= 2) {
-                echo "Port $index: status=$status\n";
             }
 
             // PoE Port Allocated Limit (snAgentPoePortWattage)
             // Units: milliwatts, convert to watts with divisor 1000
             $wattage = $poeWattage[$wattageOid] ?? null;
-            if ($index <= 2) {
-                echo "  Wattage from [$wattageOid]: $wattage\n";
-            }
             if ($wattage !== null && is_numeric($wattage) && $wattage > 0) {
-                $sensorsCreated++;
-                if ($index <= 2) {
-                    echo "  Creating wattage sensor for port {$index}\n";
-                }
-
                 discover_sensor(
                     $valid = null,
                     'power',
@@ -1063,13 +1032,6 @@ class BrocadeStack extends OS implements ProcessorDiscovery
                 );
             }
         }
-
-        echo "\n=== Port Sensor Summary ===\n";
-        echo "Total OIDs processed: $processedCount\n";
-        echo "Skipped (no port match): $skippedNoPort\n";
-        echo "Skipped (status = 1): $skippedStatus\n";
-        echo "Sensors created: $sensorsCreated\n";
-        echo "\n";
     }
 
     /**
