@@ -14,6 +14,12 @@
  * numerical OIDs when MIBs are loaded, and complex port linking requirements.
  */
 
+// Quick PoE capability check — avoid unnecessary SNMP walks on non-PoE devices
+$poeCapabilityCheck = \SnmpQuery::numeric()->get(['.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.2.1'])->value();
+if (! is_numeric($poeCapabilityCheck) || $poeCapabilityCheck <= 0) {
+    return;
+}
+
 // ============================================================================
 // PoE Unit Sensors - Device Overview (PoE Power Budget)
 // ============================================================================
@@ -35,7 +41,7 @@ if (! empty($maxPower) || ! empty($consumedPower)) {
         $capacity = $maxPower[$oid] ?? null;
         if ($capacity !== null && is_numeric($capacity) && $capacity > 0) {
             discover_sensor(
-                $valid['sensor'],
+                null,
                 'power',
                 $device,
                 '.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.2.' . $index,
@@ -61,7 +67,7 @@ if (! empty($maxPower) || ! empty($consumedPower)) {
         $consumed = $consumedPower[$oid] ?? null;
         if ($consumed !== null && is_numeric($consumed)) {
             discover_sensor(
-                $valid['sensor'],
+                null,
                 'power',
                 $device,
                 '.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.3.' . $index,
@@ -126,37 +132,40 @@ if (! empty($poePortIndex) && (! empty($poeStatus) || ! empty($poeWattage) || ! 
             continue;
         }
 
-        // Port PoE Allocated Limit
+        // Skip ports with no PoE power allocated (PoE not enabled on port)
         $wattageOid = '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.3.' . $index;
         $wattage = $poeWattage[$wattageOid] ?? null;
-        if ($wattage !== null && is_numeric($wattage) && $wattage > 0) {
-            discover_sensor(
-                $valid['sensor'],
-                'power',
-                $device,
-                $wattageOid,
-                "poe.{$portNum}.limit",
-                'brocade-poe',
-                "{$portLabel} PoE Limit",
-                1000,    // divisor (mW to W)
-                1,       // multiplier
-                0,       // low_limit
-                null, null, null,
-                $wattage / 1000, // current value in W
-                'snmp',
-                $index,  // entPhysicalIndex = port ifIndex
-                'ports', // entPhysicalIndex_measured — links to port page
-                null,    // user_func
-                null     // group
-            );
+        if (! is_numeric($wattage) || $wattage <= 0) {
+            continue;
         }
+
+        // Port PoE Allocated Limit
+        discover_sensor(
+            null,
+            'power',
+            $device,
+            $wattageOid,
+            "poe.{$portNum}.limit",
+            'brocade-poe',
+            "{$portLabel} PoE Limit",
+            1000,    // divisor (mW to W)
+            1,       // multiplier
+            0,       // low_limit
+            null, null, null,
+            $wattage / 1000, // current value in W
+            'snmp',
+            $index,  // entPhysicalIndex = port ifIndex
+            'ports', // entPhysicalIndex_measured — links to port page
+            null,    // user_func
+            null     // group
+        );
 
         // Port PoE Current Consumption
         $consumedOid = '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.6.' . $index;
         $consumed = $poeConsumed[$consumedOid] ?? null;
         if ($consumed !== null && is_numeric($consumed)) {
             discover_sensor(
-                $valid['sensor'],
+                null,
                 'power',
                 $device,
                 $consumedOid,
