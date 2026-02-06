@@ -926,6 +926,15 @@ class BrocadeStack extends OS implements ProcessorDiscovery
         $poeWattage = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.3')->values();
         $poeConsumed = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.6')->values();
 
+        echo "\n=== PoE Port Discovery Debug ===\n";
+        echo "Status array count: " . count($poeStatus) . "\n";
+        echo "Wattage array count: " . count($poeWattage) . "\n";
+        echo "Consumed array count: " . count($poeConsumed) . "\n";
+        if (!empty($poeWattage)) {
+            echo "Wattage sample (first 5): " . print_r(array_slice($poeWattage, 0, 5, true), true) . "\n";
+        }
+        echo "\n";
+
         if (empty($poeStatus) && empty($poeWattage) && empty($poeConsumed)) {
             // No PoE data available - either non-PoE hardware or table doesn't exist
             // This gracefully handles all non-PoE scenarios including mixed stacks
