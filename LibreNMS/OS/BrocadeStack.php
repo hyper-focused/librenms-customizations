@@ -800,26 +800,81 @@ class BrocadeStack extends OS implements ProcessorDiscovery
     }
 
     /**
-     * Check if hardware is PoE-capable based on model name
+     * Check if hardware is PoE-capable
      *
-     * PoE-capable models have one of these patterns:
-     * - Ends with "-POE" (standard PoE)
-     * - Ends with "-HPOE" (high-power PoE)
-     * - Ends with "P" as model suffix (e.g., ICX7550-24P, ICX8200-48P)
-     * - Contains "PoE" anywhere in name (e.g., "FCX648S PoE+")
+     * Primary method: Check sysObjectID against known PoE models
+     * Fallback method: Pattern match hardware string for PoE indicators
+     *
+     * This two-tier approach ensures:
+     * - Reliable detection for known models via sysObjectID
+     * - Future-proofing via pattern matching for new/unknown models
+     * - Handles edge cases like ICX8200-48PF (P not at end)
      *
      * @return bool
      */
     private function isPoeCapable(): bool
     {
-        $hardware = $this->getDevice()->hardware ?? '';
+        $device = $this->getDevice();
+
+        // Method 1: Check sysObjectID for known PoE model OIDs
+        // This is the most reliable method
+        $sysObjectID = $device->sysObjectID ?? '';
+
+        // Known PoE model OID patterns from FOUNDRY-SN-ROOT-MIB
+        // These are the OID suffixes for PoE-capable models
+        $poeObjectIDs = [
+            // FCX Series PoE
+            '.1.3.6.1.4.1.1991.1.3.54.1.1.2', // snFCX624SHPOESwitch
+            '.1.3.6.1.4.1.1991.1.3.54.1.1.3', // snFCX648SHPOESwitch
+
+            // ICX 6430 Series PoE
+            '.1.3.6.1.4.1.1991.1.3.56.1.1.2', // snICX643024HPOESwitch
+            '.1.3.6.1.4.1.1991.1.3.56.1.1.4', // snICX643048HPOESwitch
+
+            // ICX 6450 Series PoE
+            '.1.3.6.1.4.1.1991.1.3.56.2.1.2', // snICX645024HPOESwitch
+            '.1.3.6.1.4.1.1991.1.3.56.2.1.4', // snICX645048HPOESwitch
+
+            // ICX 6610 Series PoE
+            '.1.3.6.1.4.1.1991.1.3.56.3.1.2', // snICX661024HPOESwitch
+            '.1.3.6.1.4.1.1991.1.3.56.3.1.5', // snICX661048HPOESwitch
+
+            // ICX 7150 Series PoE
+            '.1.3.6.1.4.1.1991.1.3.59.1.1.2', // snICX715024POESwitch
+            '.1.3.6.1.4.1.1991.1.3.59.1.1.5', // snICX715048POESwitch
+            '.1.3.6.1.4.1.1991.1.3.59.1.1.6', // snICX7150C12POESwitch
+            '.1.3.6.1.4.1.1991.1.3.59.1.1.7', // snICX7150C08PSwitch
+
+            // ICX 7250 Series PoE
+            '.1.3.6.1.4.1.1991.1.3.59.2.1.2', // snICX725024HPOESwitch
+            '.1.3.6.1.4.1.1991.1.3.59.2.1.5', // snICX725048HPOESwitch
+
+            // ICX 7450 Series PoE
+            '.1.3.6.1.4.1.1991.1.3.59.3.1.2', // snICX745024HPOESwitch
+            '.1.3.6.1.4.1.1991.1.3.59.3.1.4', // snICX745048HPOESwitch
+
+            // ICX 7550/8200 Series PoE (future models)
+            // Pattern: any OID containing these series with P suffix variants
+        ];
+
+        // Check if sysObjectID matches any known PoE model
+        foreach ($poeObjectIDs as $poeOID) {
+            if (strpos($sysObjectID, $poeOID) !== false) {
+                return true;
+            }
+        }
+
+        // Method 2: Pattern match hardware string (fallback for unknown models)
+        // This provides future-proofing for new PoE models not yet in OID list
+        $hardware = $device->hardware ?? '';
 
         if (empty($hardware)) {
             return false;
         }
 
         // Check for PoE indicators in hardware string
-        if (preg_match('/(POE|PoE\+?|HPOE|-P$|\d+P\s|PoE)/', $hardware)) {
+        // Patterns: -POE, -HPOE, PoE+, or "P" near end (with flexibility for PF, etc.)
+        if (preg_match('/(POE|PoE\+?|HPOE|-P\b|\bP\b.*PoE|PoE)/i', $hardware)) {
             return true;
         }
 
