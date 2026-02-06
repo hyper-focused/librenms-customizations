@@ -39,3 +39,6 @@ captures/
 
 # Local debug / one-off scripts
 debug_stack_detection.php
+
+# MCP server configuration (contains credentials)
+.mcp.json

@@ -815,36 +815,30 @@ class BrocadeStack extends OS implements ProcessorDiscovery
     {
         $device = $this->getDevice();
 
-        // Walk the PoE unit table
-        // OID .1.3.6.1.4.1.1991.1.1.2.14.4.1.1 = snAgentPoeUnitEntry
-        // Using numeric() to get proper table structure with numerical indices
-        $poeUnitData = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.4.1.1')->table(1);
+        // Walk individual columns of the PoE unit table
+        // Base OID: .1.3.6.1.4.1.1991.1.1.2.14.4.1.1 = snAgentPoeUnitEntry
+        // Column .2 = snAgentPoeUnitMaxPower (capacity in milliwatts)
+        // Column .3 = snAgentPoeUnitConsumedPower (consumption in milliwatts)
+        // Using individual column walks with ->values() for reliable parsing
 
-        echo "\n=== PoE Unit Discovery Debug ===\n";
-        echo "Empty check: " . (empty($poeUnitData) ? "YES (returning early)" : "NO") . "\n";
-        echo "Array count: " . count($poeUnitData) . "\n";
-        echo "Array keys: " . implode(', ', array_keys($poeUnitData)) . "\n";
-        echo "Full structure:\n";
-        print_r($poeUnitData);
-        echo "\n";
+        $maxPower = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.2')->values();
+        $consumedPower = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.3')->values();
 
-        if (empty($poeUnitData)) {
+        if (empty($maxPower) && empty($consumedPower)) {
             // No PoE data available - non-PoE hardware
             return;
         }
 
-        foreach ($poeUnitData as $index => $data) {
-            echo "Processing index: $index\n";
-            echo "Data type: " . gettype($data) . "\n";
-            echo "Data structure: " . print_r($data, true) . "\n";
+        // Get all unit indices from either dataset
+        $unitIndices = array_unique(array_merge(array_keys($maxPower), array_keys($consumedPower)));
 
-            // Index is the unit number (1, 2, 3, etc.)
+        foreach ($unitIndices as $index) {
             $unitNum = $index;
 
-            // PoE Unit Capacity (column .2 = snAgentPoeUnitMaxPower)
-            // Units: milliwatts, convert to watts
-            $capacity = $data[2] ?? null;
-            if ($capacity !== null && is_numeric($capacity)) {
+            // PoE Unit Capacity (snAgentPoeUnitMaxPower)
+            // Units: milliwatts, convert to watts with divisor 1000
+            $capacity = $maxPower[$index] ?? null;
+            if ($capacity !== null && is_numeric($capacity) && $capacity > 0) {
                 $capacityOid = '.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.2.' . $index;
 
                 discover_sensor(
@@ -867,9 +861,9 @@ class BrocadeStack extends OS implements ProcessorDiscovery
                 );
             }
 
-            // PoE Unit Consumption (column .3 = snAgentPoeUnitConsumedPower)
-            // Units: milliwatts, convert to watts
-            $consumed = $data[3] ?? null;
+            // PoE Unit Consumption (snAgentPoeUnitConsumedPower)
+            // Units: milliwatts, convert to watts with divisor 1000
+            $consumed = $consumedPower[$index] ?? null;
             if ($consumed !== null && is_numeric($consumed)) {
                 $consumedOid = '.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.3.' . $index;
 
@@ -917,13 +911,18 @@ class BrocadeStack extends OS implements ProcessorDiscovery
     {
         $device = $this->getDevice();
 
-        // Get all PoE port data from FOUNDRY-POE-MIB
-        // Using numerical OID because FOUNDRY-POE-MIB may not resolve on all systems
-        // OID .1.3.6.1.4.1.1991.1.1.2.14.2.2 = snAgentPoePortTable
-        // Using numeric() to get proper table structure with numerical indices
-        $poePortData = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.2.2')->table(1);
+        // Walk individual columns of the PoE port table
+        // Base OID: .1.3.6.1.4.1.1991.1.1.2.14.2.2 = snAgentPoePortTable
+        // Column .2 = snAgentPoePortControl (port status)
+        // Column .3 = snAgentPoePortWattage (allocated limit in milliwatts)
+        // Column .6 = snAgentPoePortConsumed (current consumption in milliwatts)
+        // Using individual column walks with ->values() for reliable parsing
 
-        if (empty($poePortData)) {
+        $poeStatus = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.2')->values();
+        $poeWattage = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.3')->values();
+        $poeConsumed = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.6')->values();
+
+        if (empty($poeStatus) && empty($poeWattage) && empty($poeConsumed)) {
             // No PoE data available - either non-PoE hardware or table doesn't exist
             // This gracefully handles all non-PoE scenarios including mixed stacks
             return;
@@ -938,7 +937,14 @@ class BrocadeStack extends OS implements ProcessorDiscovery
             $portMap[$port->ifIndex] = $port;
         }
 
-        foreach ($poePortData as $index => $data) {
+        // Get all port indices that have any PoE data
+        $portIndices = array_unique(array_merge(
+            array_keys($poeStatus),
+            array_keys($poeWattage),
+            array_keys($poeConsumed)
+        ));
+
+        foreach ($portIndices as $index) {
             // Check if we have a matching port in LibreNMS
             if (!isset($portMap[$index])) {
                 continue;
@@ -947,21 +953,19 @@ class BrocadeStack extends OS implements ProcessorDiscovery
             $port = $portMap[$index];
             $portLabel = $port->ifDescr ?: "Port {$index}";
 
-            // Check port PoE status (column .2 = snAgentPoePortControl)
+            // Check port PoE status (snAgentPoePortControl)
             // 1=notCapable, 2=disabled, 3=enabled, 4=legacyEnabled
-            // Using numerical index because we're using numerical OIDs
-            $poeStatus = $data[2] ?? 1;
+            $status = $poeStatus[$index] ?? 1;
 
             // Skip non-PoE capable ports (status = 1)
-            if ($poeStatus == 1) {
+            if ($status == 1) {
                 continue;
             }
 
-            // PoE Port Allocated Limit (column .3 = snAgentPoePortWattage)
-            // Units: milliwatts, convert to watts
-            // Using numerical index because we're using numerical OIDs
-            $wattage = $data[3] ?? null;
-            if ($wattage !== null && is_numeric($wattage)) {
+            // PoE Port Allocated Limit (snAgentPoePortWattage)
+            // Units: milliwatts, convert to watts with divisor 1000
+            $wattage = $poeWattage[$index] ?? null;
+            if ($wattage !== null && is_numeric($wattage) && $wattage > 0) {
                 $wattageOid = '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.3.' . $index;
 
                 discover_sensor(
@@ -986,10 +990,9 @@ class BrocadeStack extends OS implements ProcessorDiscovery
                 );
             }
 
-            // PoE Port Current Consumption (column .6 = snAgentPoePortConsumed)
-            // Units: milliwatts, convert to watts
-            // Using numerical index because we're using numerical OIDs
-            $consumed = $data[6] ?? null;
+            // PoE Port Current Consumption (snAgentPoePortConsumed)
+            // Units: milliwatts, convert to watts with divisor 1000
+            $consumed = $poeConsumed[$index] ?? null;
             if ($consumed !== null && is_numeric($consumed)) {
                 $consumedOid = '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.6.' . $index;
 
