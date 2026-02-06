@@ -950,15 +950,9 @@ class BrocadeStack extends OS implements ProcessorDiscovery
         $poeWattage = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.3')->values();
         $poeConsumed = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.6')->values();
 
-        echo "DEBUG: PoE port discovery - portIndex count: " . count($poePortIndex) .
-             ", status: " . count($poeStatus) .
-             ", wattage: " . count($poeWattage) .
-             ", consumed: " . count($poeConsumed) . "\n";
-
         if (empty($poePortIndex) || (empty($poeStatus) && empty($poeWattage) && empty($poeConsumed))) {
             // No PoE data available - either non-PoE hardware or table doesn't exist
             // This gracefully handles all non-PoE scenarios including mixed stacks
-            echo "DEBUG: No PoE port data available, exiting\n";
             return;
         }
 
@@ -973,15 +967,12 @@ class BrocadeStack extends OS implements ProcessorDiscovery
 
         // Iterate over port indices from column .1 (snAgentPoePortIndex)
         // The OID index is the ifIndex, the returned value is the port number
-        echo "DEBUG: Starting port iteration, processing " . count($poePortIndex) . " ports\n";
         foreach ($poePortIndex as $oid => $portNum) {
             // Extract ifIndex from OID (e.g., '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.1.1' => 1)
             $index = (int) substr($oid, strrpos($oid, '.') + 1);
-            echo "DEBUG: Port OID=$oid, portNum=$portNum, index=$index\n";
 
             // Check if we have a matching port in LibreNMS
             if (!isset($portMap[$index])) {
-                echo "DEBUG: No matching port in portMap for index $index\n";
                 continue;
             }
 
@@ -1022,8 +1013,8 @@ class BrocadeStack extends OS implements ProcessorDiscovery
                     null, // high_limit
                     $wattage, // current value in mW
                     'snmp', // poller_type
-                    null, // entPhysicalIndex (not needed - matches via sensor_index)
-                    null, // entPhysicalIndex_measured
+                    $index, // entPhysicalIndex - port ifIndex for port page linking
+                    'ports', // entPhysicalIndex_measured - links sensor to port page
                     null, // user_func
                     null // group
                 );
@@ -1049,8 +1040,8 @@ class BrocadeStack extends OS implements ProcessorDiscovery
                     null, // high_limit
                     $consumed, // current value in mW
                     'snmp', // poller_type
-                    null, // entPhysicalIndex (not needed - matches via sensor_index)
-                    null, // entPhysicalIndex_measured
+                    $index, // entPhysicalIndex - port ifIndex for port page linking
+                    'ports', // entPhysicalIndex_measured - links sensor to port page
                     null, // user_func
                     null // group
                 );
