@@ -800,17 +800,53 @@ class BrocadeStack extends OS implements ProcessorDiscovery
     }
 
     /**
+     * Check if hardware is PoE-capable based on model name
+     *
+     * PoE-capable models have one of these patterns:
+     * - Ends with "-POE" (standard PoE)
+     * - Ends with "-HPOE" (high-power PoE)
+     * - Ends with "P" as model suffix (e.g., ICX7550-24P, ICX8200-48P)
+     * - Contains "PoE" anywhere in name (e.g., "FCX648S PoE+")
+     *
+     * @return bool
+     */
+    private function isPoeCapable(): bool
+    {
+        $hardware = $this->getDevice()->hardware ?? '';
+
+        if (empty($hardware)) {
+            return false;
+        }
+
+        // Check for PoE indicators in hardware string
+        if (preg_match('/(POE|PoE\+?|HPOE|-P$|\d+P\s|PoE)/', $hardware)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Discover per-port PoE sensors
      *
      * Discovers PoE power consumption and limits for each port.
      * Sensors are linked to individual port pages via port_id.
      * Only runs on PoE-capable hardware (gracefully skips if table doesn't exist).
      *
+     * Hardware-based filtering:
+     * - Models ending with -POE, -HPOE, or P are PoE-capable
+     * - All other models skip PoE discovery entirely
+     *
      * @return void
      */
     private function discoverPoePortSensors(): void
     {
         $device = $this->getDevice();
+
+        // Skip PoE discovery for non-PoE hardware based on model name
+        if (!$this->isPoeCapable()) {
+            return;
+        }
 
         // Get all PoE port data from FOUNDRY-POE-MIB
         $poePortData = \SnmpQuery::walk('FOUNDRY-POE-MIB::snAgentPoePortTable')->table();
