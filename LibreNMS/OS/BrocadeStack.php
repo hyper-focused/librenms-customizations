@@ -965,9 +965,14 @@ class BrocadeStack extends OS implements ProcessorDiscovery
         $skippedStatus = 0;
         $sensorsCreated = 0;
 
+        // Process each unique port index
+        $uniqueIndices = [];
         foreach ($allPortOids as $oid) {
-            // Extract ifIndex from OID (last component after final dot)
             $index = (int) substr($oid, strrpos($oid, '.') + 1);
+            $uniqueIndices[$index] = true;
+        }
+
+        foreach (array_keys($uniqueIndices) as $index) {
             $processedCount++;
 
             // Check if we have a matching port in LibreNMS
@@ -979,9 +984,14 @@ class BrocadeStack extends OS implements ProcessorDiscovery
             $port = $portMap[$index];
             $portLabel = $port->ifDescr ?: "Port {$index}";
 
+            // Build OID keys for this index
+            $statusOid = '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.2.' . $index;
+            $wattageOid = '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.3.' . $index;
+            $consumedOid = '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.6.' . $index;
+
             // Check port PoE status (snAgentPoePortControl)
             // 1=notCapable, 2=disabled, 3=enabled, 4=legacyEnabled
-            $status = $poeStatus[$oid] ?? 1;
+            $status = $poeStatus[$statusOid] ?? 1;
 
             // Skip non-PoE capable ports (status = 1)
             if ($status == 1) {
@@ -990,27 +1000,26 @@ class BrocadeStack extends OS implements ProcessorDiscovery
             }
 
             if ($index <= 2) {
-                echo "Port $index: status=$status, oid=$oid\n";
+                echo "Port $index: status=$status\n";
             }
 
             // PoE Port Allocated Limit (snAgentPoePortWattage)
             // Units: milliwatts, convert to watts with divisor 1000
-            $wattage = $poeWattage[$oid] ?? null;
+            $wattage = $poeWattage[$wattageOid] ?? null;
             if ($index <= 2) {
-                echo "  Wattage: $wattage\n";
+                echo "  Wattage from [$wattageOid]: $wattage\n";
             }
             if ($wattage !== null && is_numeric($wattage) && $wattage > 0) {
-                $wattageOid = '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.3.' . $index;
                 $sensorsCreated++;
                 if ($index <= 2) {
-                    echo "  Creating wattage sensor\n";
+                    echo "  Creating wattage sensor for port {$index}\n";
                 }
 
                 discover_sensor(
                     $valid = null,
                     'power',
                     $device,
-                    $wattageOid,
+                    $wattageOid,  // Already built above
                     "poe-limit-{$index}",
                     'brocade-poe',
                     "{$portLabel} PoE Limit",
@@ -1030,10 +1039,8 @@ class BrocadeStack extends OS implements ProcessorDiscovery
 
             // PoE Port Current Consumption (snAgentPoePortConsumed)
             // Units: milliwatts, convert to watts with divisor 1000
-            $consumed = $poeConsumed[$oid] ?? null;
+            $consumed = $poeConsumed[$consumedOid] ?? null;
             if ($consumed !== null && is_numeric($consumed)) {
-                $consumedOid = '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.6.' . $index;
-
                 discover_sensor(
                     $valid = null,
                     'power',
