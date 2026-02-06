@@ -830,14 +830,18 @@ class BrocadeStack extends OS implements ProcessorDiscovery
         }
 
         // Get all unit indices from either dataset
-        $unitIndices = array_unique(array_merge(array_keys($maxPower), array_keys($consumedPower)));
+        // Note: ->values() returns full OID as key (e.g., '.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.2.1')
+        // We need to extract the last component as the index
+        $allOids = array_unique(array_merge(array_keys($maxPower), array_keys($consumedPower)));
 
-        foreach ($unitIndices as $index) {
+        foreach ($allOids as $oid) {
+            // Extract index from OID (last component after final dot)
+            $index = (int) substr($oid, strrpos($oid, '.') + 1);
             $unitNum = $index;
 
             // PoE Unit Capacity (snAgentPoeUnitMaxPower)
             // Units: milliwatts, convert to watts with divisor 1000
-            $capacity = $maxPower[$index] ?? null;
+            $capacity = $maxPower[$oid] ?? null;
             if ($capacity !== null && is_numeric($capacity) && $capacity > 0) {
                 $capacityOid = '.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.2.' . $index;
 
@@ -863,7 +867,7 @@ class BrocadeStack extends OS implements ProcessorDiscovery
 
             // PoE Unit Consumption (snAgentPoeUnitConsumedPower)
             // Units: milliwatts, convert to watts with divisor 1000
-            $consumed = $consumedPower[$index] ?? null;
+            $consumed = $consumedPower[$oid] ?? null;
             if ($consumed !== null && is_numeric($consumed)) {
                 $consumedOid = '.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.3.' . $index;
 
@@ -937,14 +941,19 @@ class BrocadeStack extends OS implements ProcessorDiscovery
             $portMap[$port->ifIndex] = $port;
         }
 
-        // Get all port indices that have any PoE data
-        $portIndices = array_unique(array_merge(
+        // Get all port OIDs that have any PoE data
+        // Note: ->values() returns full OID as key (e.g., '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.2.1')
+        // We need to extract the last component as the ifIndex
+        $allPortOids = array_unique(array_merge(
             array_keys($poeStatus),
             array_keys($poeWattage),
             array_keys($poeConsumed)
         ));
 
-        foreach ($portIndices as $index) {
+        foreach ($allPortOids as $oid) {
+            // Extract ifIndex from OID (last component after final dot)
+            $index = (int) substr($oid, strrpos($oid, '.') + 1);
+
             // Check if we have a matching port in LibreNMS
             if (!isset($portMap[$index])) {
                 continue;
@@ -955,7 +964,7 @@ class BrocadeStack extends OS implements ProcessorDiscovery
 
             // Check port PoE status (snAgentPoePortControl)
             // 1=notCapable, 2=disabled, 3=enabled, 4=legacyEnabled
-            $status = $poeStatus[$index] ?? 1;
+            $status = $poeStatus[$oid] ?? 1;
 
             // Skip non-PoE capable ports (status = 1)
             if ($status == 1) {
@@ -964,7 +973,7 @@ class BrocadeStack extends OS implements ProcessorDiscovery
 
             // PoE Port Allocated Limit (snAgentPoePortWattage)
             // Units: milliwatts, convert to watts with divisor 1000
-            $wattage = $poeWattage[$index] ?? null;
+            $wattage = $poeWattage[$oid] ?? null;
             if ($wattage !== null && is_numeric($wattage) && $wattage > 0) {
                 $wattageOid = '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.3.' . $index;
 
@@ -992,7 +1001,7 @@ class BrocadeStack extends OS implements ProcessorDiscovery
 
             // PoE Port Current Consumption (snAgentPoePortConsumed)
             // Units: milliwatts, convert to watts with divisor 1000
-            $consumed = $poeConsumed[$index] ?? null;
+            $consumed = $poeConsumed[$oid] ?? null;
             if ($consumed !== null && is_numeric($consumed)) {
                 $consumedOid = '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.6.' . $index;
 
