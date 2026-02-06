@@ -14,8 +14,6 @@
  * numerical OIDs when MIBs are loaded, and complex port linking requirements.
  */
 
-use LibreNMS\Util\SnmpQuery;
-
 // ============================================================================
 // PoE Unit Sensors - Device Overview (PoE Power Budget)
 // ============================================================================
@@ -23,8 +21,8 @@ use LibreNMS\Util\SnmpQuery;
 //   .2 = snAgentPoeUnitMaxPower (capacity in milliwatts)
 //   .3 = snAgentPoeUnitConsumedPower (consumption in milliwatts)
 
-$maxPower = SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.2')->values();
-$consumedPower = SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.3')->values();
+$maxPower = \\SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.2')->values();
+$consumedPower = \\SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.3')->values();
 
 if (! empty($maxPower) || ! empty($consumedPower)) {
     $allOids = array_unique(array_merge(array_keys($maxPower), array_keys($consumedPower)));
@@ -96,10 +94,10 @@ if (! empty($maxPower) || ! empty($consumedPower)) {
 //   .1.3 = snAgentPoePortWattage (allocated limit in milliwatts)
 //   .1.6 = snAgentPoePortConsumed (current consumption in milliwatts)
 
-$poePortIndex = SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.1')->values();
-$poeStatus = SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.2')->values();
-$poeWattage = SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.3')->values();
-$poeConsumed = SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.6')->values();
+$poePortIndex = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.1')->values();
+$poeStatus = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.2')->values();
+$poeWattage = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.3')->values();
+$poeConsumed = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.6')->values();
 
 if (! empty($poePortIndex) && (! empty($poeStatus) || ! empty($poeWattage) || ! empty($poeConsumed))) {
     // Build port map from DB (keyed by ifIndex for fast lookup)
