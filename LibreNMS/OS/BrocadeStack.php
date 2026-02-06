@@ -820,12 +820,21 @@ class BrocadeStack extends OS implements ProcessorDiscovery
         // Columns: .1 = index, .2 = maxPower, .3 = consumedPower, .4 = type
         $poeUnitData = \SnmpQuery::walk('.1.3.6.1.4.1.1991.1.1.2.14.4.1.1')->table();
 
+        // DEBUG: Show raw data structure
+        echo "DEBUG PoE Unit Data Structure:\n";
+        print_r($poeUnitData);
+        echo "\n";
+
         if (empty($poeUnitData)) {
             // No PoE data available - non-PoE hardware
+            echo "DEBUG: PoE unit data is empty\n";
             return;
         }
 
+        echo "DEBUG: Found " . count($poeUnitData) . " PoE unit entries\n";
+
         foreach ($poeUnitData as $index => $data) {
+            echo "DEBUG: Processing index={$index}, data=" . print_r($data, true) . "\n";
             // Index should be the unit number (1, 2, 3, etc.)
             $unitNum = $data[1] ?? $index;
 
@@ -911,9 +920,15 @@ class BrocadeStack extends OS implements ProcessorDiscovery
         // This table walk is stack-aware and only returns PoE-capable ports
         $poePortData = \SnmpQuery::walk('.1.3.6.1.4.1.1991.1.1.2.14.2.2')->table();
 
+        // DEBUG: Show raw data structure
+        echo "DEBUG PoE Port Data Structure:\n";
+        echo "DEBUG: Count = " . count($poePortData) . "\n";
+        echo "DEBUG: Sample indices = " . implode(', ', array_slice(array_keys($poePortData), 0, 5)) . "\n";
+
         if (empty($poePortData)) {
             // No PoE data available - either non-PoE hardware or table doesn't exist
             // This gracefully handles all non-PoE scenarios including mixed stacks
+            echo "DEBUG: PoE port data is empty\n";
             return;
         }
 
