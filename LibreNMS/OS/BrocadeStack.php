@@ -877,10 +877,11 @@ class BrocadeStack extends OS implements ProcessorDiscovery
                     0,
                     null, null, null,
                     $capacity,
-                    'sensor',
-                    null,  // no port_id (unit-level sensor)
-                    null,
-                    'PoE Power Budget'
+                    'snmp', // poller_type
+                    null, // entPhysicalIndex
+                    null, // entPhysicalIndex_measured
+                    null, // user_func
+                    'PoE Power Budget' // group
                 );
             }
 
@@ -903,10 +904,11 @@ class BrocadeStack extends OS implements ProcessorDiscovery
                     0,
                     null, null, null,
                     $consumed,
-                    'sensor',
-                    null,  // no port_id (unit-level sensor)
-                    null,
-                    'PoE Power Budget'
+                    'snmp', // poller_type
+                    null, // entPhysicalIndex
+                    null, // entPhysicalIndex_measured
+                    null, // user_func
+                    'PoE Power Budget' // group
                 );
             }
         }
@@ -1019,9 +1021,10 @@ class BrocadeStack extends OS implements ProcessorDiscovery
                     null, // warn_limit
                     null, // high_limit
                     $wattage, // current value in mW
-                    'sensor',
-                    $port->port_id, // link to port
-                    null, // rrd_type
+                    'snmp', // poller_type
+                    null, // entPhysicalIndex (not needed - matches via sensor_index)
+                    null, // entPhysicalIndex_measured
+                    null, // user_func
                     null // group
                 );
             }
@@ -1045,9 +1048,10 @@ class BrocadeStack extends OS implements ProcessorDiscovery
                     null, // warn_limit
                     null, // high_limit
                     $consumed, // current value in mW
-                    'sensor',
-                    $port->port_id, // link to port
-                    null, // rrd_type
+                    'snmp', // poller_type
+                    null, // entPhysicalIndex (not needed - matches via sensor_index)
+                    null, // entPhysicalIndex_measured
+                    null, // user_func
                     null // group
                 );
             }
