@@ -10,9 +10,10 @@ $poeSensors = DeviceCache::getPrimary()->sensors->where('sensor_type', 'brocade-
 if ($poeSensors->isNotEmpty()) {
     // Separate unit-level and port-level sensors
     $unitCapacity = $poeSensors->filter(fn ($s) => str_starts_with($s->sensor_index, 'poe-unit-capacity-'));
-    $unitConsumption = $poeSensors->filter(fn ($s) => str_starts_with($s->sensor_index, 'poe-unit-consumption-'));
+    $unitAvailable = $poeSensors->filter(fn ($s) => str_starts_with($s->sensor_index, 'poe-unit-available-'));
     $portLimitSensors = $poeSensors->filter(fn ($s) => str_ends_with($s->sensor_index, '.limit'));
-    $portConsumptionSensors = $poeSensors->filter(fn ($s) => str_ends_with($s->sensor_index, '.consumption'));
+    $portConsumptionSensors = $poeSensors->filter(fn ($s) => str_ends_with($s->sensor_index, '.consumption')
+        && ! str_starts_with($s->sensor_index, 'poe-unit-'));
 
     $portsWithPoE = $portLimitSensors->count();
     $portsConsuming = $portConsumptionSensors->filter(fn ($s) => $s->sensor_current > 0)->count();
@@ -26,15 +27,17 @@ if ($poeSensors->isNotEmpty()) {
               </div>
               <div class="panel-body">';
 
-    // Unit-level capacity/consumption bars
+    // Unit-level capacity with calculated consumption
     $unitIndexes = $unitCapacity->pluck('sensor_index')->map(fn ($idx) => (int) str_replace('poe-unit-capacity-', '', $idx))->unique()->sort();
 
     foreach ($unitIndexes as $unitNum) {
         $capSensor = $unitCapacity->firstWhere('sensor_index', "poe-unit-capacity-{$unitNum}");
-        $conSensor = $unitConsumption->firstWhere('sensor_index', "poe-unit-consumption-{$unitNum}");
+        $availSensor = $unitAvailable->firstWhere('sensor_index', "poe-unit-available-{$unitNum}");
 
         $capacity = $capSensor ? $capSensor->sensor_current : 0;
-        $consumption = $conSensor ? $conSensor->sensor_current : 0;
+        $available = $availSensor ? $availSensor->sensor_current : $capacity;
+        // Consumption = total capacity - remaining available
+        $consumption = max(0, $capacity - $available);
         $usage = $capacity > 0 ? round(($consumption / $capacity) * 100, 1) : 0;
 
         $barClass = $usage > 80 ? 'progress-bar-danger' : ($usage > 50 ? 'progress-bar-warning' : 'progress-bar-success');
@@ -55,40 +58,6 @@ if ($poeSensors->isNotEmpty()) {
                   <strong>' . round($consumption, 1) . 'W</strong> / ' . round($capacity, 1) . 'W
                 </div>
               </div>';
-
-        // Mini sparkline graph for consumption
-        if ($conSensor) {
-            $graph_array = \App\Http\Controllers\Device\Tabs\OverviewController::setGraphWidth();
-            $graph_array['id'] = $conSensor->sensor_id;
-            $graph_array['type'] = 'sensor_power';
-            $graph_array['from'] = \App\Facades\LibrenmsConfig::get('time.day');
-            $graph_array['to'] = \App\Facades\LibrenmsConfig::get('time.now');
-            $graph_array['legend'] = 'no';
-
-            $link_array = $graph_array;
-            $link_array['page'] = 'graphs';
-            unset($link_array['height'], $link_array['width'], $link_array['legend']);
-            $link = \LibreNMS\Util\Url::generate($link_array);
-
-            $overlib_content = '<div class=overlib><span class=overlib-text>' . $device['hostname'] . ' - PoE Consumption</span><br />';
-            foreach (['day', 'week', 'month', 'year'] as $period) {
-                $graph_array['from'] = \App\Facades\LibrenmsConfig::get("time.$period");
-                $graph_array['width'] = 210;
-                $graph_array['height'] = 100;
-                $overlib_content .= str_replace('"', "\'", \LibreNMS\Util\Url::graphTag($graph_array));
-            }
-            $overlib_content .= '</div>';
-
-            $graph_array = \App\Http\Controllers\Device\Tabs\OverviewController::setGraphWidth();
-            $graph_array['id'] = $conSensor->sensor_id;
-            $graph_array['type'] = 'sensor_power';
-            $graph_array['from'] = \App\Facades\LibrenmsConfig::get('time.day');
-            $graph_array['to'] = \App\Facades\LibrenmsConfig::get('time.now');
-            $graph_array['legend'] = 'no';
-            $graph = \LibreNMS\Util\Url::lazyGraphTag($graph_array);
-
-            echo \LibreNMS\Util\Url::overlibLink($link, $graph, $overlib_content);
-        }
     }
 
     // Port summary

@@ -173,22 +173,30 @@ class PortsController implements DeviceTab
             ->orderBy('ifIndex')
             ->get();
 
-        // Fetch unit-level PoE sensors for summary
+        // Fetch unit-level capacity sensors for summary
         $unitSensors = Sensor::where('device_id', $device->device_id)
             ->where('sensor_type', 'brocade-poe')
             ->where('group', 'PoE Power Budget')
             ->get();
 
+        // Build unit data: consumption = capacity - available
+        // (.3 OID returns remaining/available power despite MIB name "ConsumedPower")
         $unitData = [];
         foreach ($unitSensors as $sensor) {
             if (str_starts_with($sensor->sensor_index, 'poe-unit-capacity-')) {
                 $unitNum = (int) str_replace('poe-unit-capacity-', '', $sensor->sensor_index);
                 $unitData[$unitNum]['capacity'] = $sensor->sensor_current;
-            } elseif (str_starts_with($sensor->sensor_index, 'poe-unit-consumption-')) {
-                $unitNum = (int) str_replace('poe-unit-consumption-', '', $sensor->sensor_index);
-                $unitData[$unitNum]['consumption'] = $sensor->sensor_current;
+            } elseif (str_starts_with($sensor->sensor_index, 'poe-unit-available-')) {
+                $unitNum = (int) str_replace('poe-unit-available-', '', $sensor->sensor_index);
+                $unitData[$unitNum]['available'] = $sensor->sensor_current;
             }
         }
+        foreach ($unitData as $unitNum => &$unit) {
+            $available = $unit['available'] ?? $unit['capacity'] ?? 0;
+            $unit['consumption'] = max(0, ($unit['capacity'] ?? 0) - $available);
+            unset($unit['available']);
+        }
+        unset($unit);
         ksort($unitData);
 
         return [

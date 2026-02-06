@@ -24,22 +24,21 @@ if (! is_numeric($poeCapabilityCheck) || $poeCapabilityCheck <= 0) {
 // PoE Unit Sensors - Device Overview (PoE Power Budget)
 // ============================================================================
 // snAgentPoeUnitEntry (.1.3.6.1.4.1.1991.1.1.2.14.4.1.1)
-//   .2 = snAgentPoeUnitMaxPower (capacity in milliwatts)
-//   .3 = snAgentPoeUnitConsumedPower (consumption in milliwatts)
+//   .2 = snAgentPoeUnitMaxPower (total capacity in milliwatts)
+//   .3 = snAgentPoeUnitConsumedPower (remaining/available capacity in milliwatts)
+//       Note: Despite the MIB name, .3 returns AVAILABLE power, not consumed.
+//       Actual consumption = .2 (capacity) - .3 (available)
 
 $maxPower = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.2')->values();
-$consumedPower = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.3')->values();
+$availablePower = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.3')->values();
 
-if (! empty($maxPower) || ! empty($consumedPower)) {
-    $allOids = array_unique(array_merge(array_keys($maxPower), array_keys($consumedPower)));
-
-    foreach ($allOids as $oid) {
+if (! empty($maxPower)) {
+    foreach ($maxPower as $oid => $capacity) {
         $index = (int) substr($oid, strrpos($oid, '.') + 1);
         $unitNum = $index;
 
-        // Unit PoE Capacity
-        $capacity = $maxPower[$oid] ?? null;
-        if ($capacity !== null && is_numeric($capacity) && $capacity > 0) {
+        // Unit PoE Capacity (total budget)
+        if (is_numeric($capacity) && $capacity > 0) {
             discover_sensor(
                 null,
                 'power',
@@ -63,24 +62,25 @@ if (! empty($maxPower) || ! empty($consumedPower)) {
             );
         }
 
-        // Unit PoE Consumption
-        $consumed = $consumedPower[$oid] ?? null;
-        if ($consumed !== null && is_numeric($consumed)) {
+        // Unit PoE Available (remaining budget — used to calculate consumption)
+        $availOid = '.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.3.' . $index;
+        $available = $availablePower[$availOid] ?? null;
+        if ($available !== null && is_numeric($available)) {
             discover_sensor(
                 null,
                 'power',
                 $device,
-                '.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.3.' . $index,
-                "poe-unit-consumption-{$index}",
+                $availOid,
+                "poe-unit-available-{$index}",
                 'brocade-poe',
-                "Unit {$unitNum} PoE Consumption",
+                "Unit {$unitNum} PoE Available",
                 1000,   // divisor: mW to W
                 1,      // multiplier
                 0,      // low_limit
                 null,   // low_warn_limit
                 null,   // warn_limit
                 null,   // high_limit
-                $consumed / 1000, // current value in W
+                $available / 1000, // current value in W
                 'snmp',
                 null,   // entPhysicalIndex (no port link)
                 null,   // entPhysicalIndex_measured
