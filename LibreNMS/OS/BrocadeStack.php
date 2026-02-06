@@ -55,6 +55,7 @@ class BrocadeStack extends OS implements ProcessorDiscovery
 
         $this->rewriteHardware(); // Translate hardware names
         $this->discoverStackTopology(); // Enhanced stack discovery
+        $this->discoverPoePortSensors(); // PoE per-port sensors
     }
 
     /**
@@ -796,6 +797,105 @@ class BrocadeStack extends OS implements ProcessorDiscovery
         }
 
         return $processors;
+    }
+
+    /**
+     * Discover per-port PoE sensors
+     *
+     * Discovers PoE power consumption and limits for each port.
+     * Sensors are linked to individual port pages via port_id.
+     * Only runs on PoE-capable hardware (gracefully skips if table doesn't exist).
+     *
+     * @return void
+     */
+    private function discoverPoePortSensors(): void
+    {
+        $device = $this->getDevice();
+
+        // Get all PoE port data from FOUNDRY-POE-MIB
+        $poePortData = \SnmpQuery::walk('FOUNDRY-POE-MIB::snAgentPoePortTable')->table();
+
+        if (empty($poePortData)) {
+            // No PoE data available (non-PoE hardware or unsupported)
+            return;
+        }
+
+        // Get all ports from LibreNMS database to map port indices
+        $ports = $device->ports()->get();
+        $portMap = [];
+
+        foreach ($ports as $port) {
+            // Map by ifIndex - Brocade uses ifIndex for port table indices
+            $portMap[$port->ifIndex] = $port;
+        }
+
+        foreach ($poePortData as $index => $data) {
+            // Check if we have a matching port in LibreNMS
+            if (!isset($portMap[$index])) {
+                continue;
+            }
+
+            $port = $portMap[$index];
+            $portLabel = $port->ifDescr ?: "Port {$index}";
+
+            // PoE Port Allocated Limit (snAgentPoePortWattage)
+            // Units: milliwatts, convert to watts
+            $wattage = $data['snAgentPoePortWattage'] ?? null;
+            if ($wattage !== null && is_numeric($wattage)) {
+                $wattageWatts = $wattage / 1000; // Convert milliwatts to watts
+                $wattageOid = '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.4.' . $index;
+
+                discover_sensor(
+                    $valid = null,
+                    'power',
+                    $device,
+                    $wattageOid,
+                    "poe-limit-{$index}",
+                    'brocade-poe',
+                    "{$portLabel} PoE Limit",
+                    1000, // divisor (mW to W)
+                    1, // multiplier
+                    0, // low_limit
+                    null, // low_warn_limit
+                    null, // warn_limit
+                    null, // high_limit
+                    $wattage, // current value in mW
+                    'sensor',
+                    $port->port_id, // link to port
+                    null, // rrd_type
+                    null // group
+                );
+            }
+
+            // PoE Port Current Consumption (snAgentPoePortConsumed)
+            // Units: milliwatts, convert to watts
+            $consumed = $data['snAgentPoePortConsumed'] ?? null;
+            if ($consumed !== null && is_numeric($consumed)) {
+                $consumedWatts = $consumed / 1000; // Convert milliwatts to watts
+                $consumedOid = '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.5.' . $index;
+
+                discover_sensor(
+                    $valid = null,
+                    'power',
+                    $device,
+                    $consumedOid,
+                    "poe-consumption-{$index}",
+                    'brocade-poe',
+                    "{$portLabel} PoE Consumption",
+                    1000, // divisor (mW to W)
+                    1, // multiplier
+                    0, // low_limit
+                    null, // low_warn_limit
+                    null, // warn_limit
+                    null, // high_limit
+                    $consumed, // current value in mW
+                    'sensor',
+                    $port->port_id, // link to port
+                    null, // rrd_type
+                    null // group
+                );
+            }
+        }
     }
 
     /**
