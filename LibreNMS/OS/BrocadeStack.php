@@ -838,12 +838,20 @@ class BrocadeStack extends OS implements ProcessorDiscovery
             $port = $portMap[$index];
             $portLabel = $port->ifDescr ?: "Port {$index}";
 
-            // PoE Port Allocated Limit (snAgentPoePortWattage)
+            // Check port PoE status (OID .2)
+            // 1=notCapable, 2=disabled, 3=enabled, 4=legacyEnabled
+            $poeStatus = $data['snAgentPoePortStatus'] ?? 1;
+
+            // Skip non-PoE capable ports (status = 1)
+            if ($poeStatus == 1) {
+                continue;
+            }
+
+            // PoE Port Allocated Limit (OID .3, not .4!)
             // Units: milliwatts, convert to watts
-            $wattage = $data['snAgentPoePortWattage'] ?? null;
+            $wattage = $data['snAgentPoePortPower'] ?? null;
             if ($wattage !== null && is_numeric($wattage)) {
-                $wattageWatts = $wattage / 1000; // Convert milliwatts to watts
-                $wattageOid = '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.4.' . $index;
+                $wattageOid = '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.3.' . $index;
 
                 discover_sensor(
                     $valid = null,
@@ -867,12 +875,11 @@ class BrocadeStack extends OS implements ProcessorDiscovery
                 );
             }
 
-            // PoE Port Current Consumption (snAgentPoePortConsumed)
+            // PoE Port Current Consumption (OID .6, not .5!)
             // Units: milliwatts, convert to watts
-            $consumed = $data['snAgentPoePortConsumed'] ?? null;
+            $consumed = $data['snAgentPoePortConsumedPower'] ?? null;
             if ($consumed !== null && is_numeric($consumed)) {
-                $consumedWatts = $consumed / 1000; // Convert milliwatts to watts
-                $consumedOid = '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.5.' . $index;
+                $consumedOid = '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.6.' . $index;
 
                 discover_sensor(
                     $valid = null,
