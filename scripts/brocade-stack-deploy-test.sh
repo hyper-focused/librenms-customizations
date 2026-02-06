@@ -130,8 +130,8 @@ sudo -u librenms find . -name "*def*.php" -path "*/cache/*" -delete 2>/dev/null 
 sudo -u librenms php artisan config:cache > /dev/null 2>&1
 
 # 5. Restart services
-if systemctl list-units --type=service | grep -q php.*-fpm 2>/dev/null; then
-  systemctl restart php*-fpm 2>/dev/null || true
+if systemctl list-units --type=service | grep -q "php.*-fpm" 2>/dev/null; then
+  systemctl restart "php*-fpm" 2>/dev/null || true
 fi
 
 if systemctl is-active --quiet nginx 2>/dev/null; then
