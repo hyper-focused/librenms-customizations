@@ -21,8 +21,8 @@
 //   .2 = snAgentPoeUnitMaxPower (capacity in milliwatts)
 //   .3 = snAgentPoeUnitConsumedPower (consumption in milliwatts)
 
-$maxPower = \\SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.2')->values();
-$consumedPower = \\SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.3')->values();
+$maxPower = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.2')->values();
+$consumedPower = \SnmpQuery::numeric()->walk('.1.3.6.1.4.1.1991.1.1.2.14.4.1.1.3')->values();
 
 if (! empty($maxPower) || ! empty($consumedPower)) {
     $allOids = array_unique(array_merge(array_keys($maxPower), array_keys($consumedPower)));
