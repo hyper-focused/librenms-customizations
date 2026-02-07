@@ -29,7 +29,7 @@ modules:
       - oid: FOUNDRY-SN-AGENT-MIB::snAgentCpuUtilTable
         value: FOUNDRY-SN-AGENT-MIB::snAgentCpuUtilPercent
         num_oid: '.1.3.6.1.4.1.1991.1.1.2.11.1.1.5.{{ $index }}'
-        descr: 'Unit {{ $subindex0 }}.{{ $subindex1 }} CPU Utilization'
+        descr: 'Unit {{ $subindex0 }} CPU Utilization ({{ $subindex1 }}s)'
         index: '{{ $index }}'
   sensors:
     temperature:
@@ -39,9 +39,9 @@ modules:
           value: FOUNDRY-SN-AGENT-MIB::snAgentTemp2Value
           divisor: 2
           num_oid: '.1.3.6.1.4.1.1991.1.1.2.13.3.1.5.{{ $index }}'
-          descr: 'Unit {{ $subindex0 }}: {{ FOUNDRY-SN-AGENT-MIB::snAgentTemp2SensorDescr }}'
+          descr: 'Unit {{ $subindex0 }}: '
           index: '{{ $index }}'
-          group: 'Module Temperatures'
+          group: 'Temperature Sensors'
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "="
@@ -51,9 +51,9 @@ modules:
           value: FOUNDRY-SN-AGENT-MIB::snAgentTempValue
           divisor: 2
           num_oid: '.1.3.6.1.4.1.1991.1.1.2.13.1.1.4.{{ $index }}'
-          descr: '{{ FOUNDRY-SN-AGENT-MIB::snAgentTempSensorDescr }}'
+          descr: 'Temperature Sensor {{ $index }}'
           index: '{{ $index }}'
-          group: 'Module Temperatures'
+          group: 'Temperature Sensors'
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "!="
@@ -67,7 +67,7 @@ modules:
           descr: 'Power Supply {{ $index }} Status'
           index: '{{ $index }}'
           group: 'Power Supply Status'
-          state_name: snChasPwrSupplyOperStatus
+          state_name: 'Power Supply {{ $index }}'
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "!="
@@ -83,7 +83,7 @@ modules:
           descr: 'Unit {{ $subindex0 }} Power Supply {{ $subindex1 }} Status'
           index: '{{ $index }}'
           group: 'Power Supply Status'
-          state_name: snChasPwrSupply2OperStatus
+          state_name: 'Power Supply {{ $subindex0 }}.{{ $subindex1 }}'
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "="
@@ -99,7 +99,7 @@ modules:
           descr: 'Fan {{ $index }} Status'
           index: '{{ $index }}'
           group: 'Fan Status'
-          state_name: snChasFanOperStatus
+          state_name: 'Fan {{ $index }}'
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "!="
@@ -115,7 +115,7 @@ modules:
           descr: 'Unit {{ $subindex0 }} Fan {{ $subindex1 }} Status'
           index: '{{ $index }}'
           group: 'Fan Status'
-          state_name: snChasFan2OperStatus
+          state_name: 'Fan {{ $subindex0 }}.{{ $subindex1 }}'
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "="
@@ -131,8 +131,8 @@ modules:
           num_oid: '.1.3.6.1.4.1.1991.1.1.2.2.2.1.6.{{ $index }}'
           descr: 'Unit {{ $subindex0 }} Module {{ $subindex1 }} Status'
           index: '{{ $index }}'
-          group: 'Switch Module Status'
-          state_name: snAgentBrd2ModuleStatus
+          group: 'Switch Modules'
+          state_name: 'Switch Module {{ $subindex0 }}.{{ $subindex1 }}'
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "="
@@ -151,8 +151,8 @@ modules:
           num_oid: '.1.3.6.1.4.1.1991.1.1.2.2.1.1.12.{{ $index }}'
           descr: 'Module {{ $index }} Status'
           index: '{{ $index }}'
-          group: 'Switch Module Status'
-          state_name: snAgentBrdModuleStatus
+          group: 'Switch Modules'
+          state_name: 'Switch Module {{ $index }}'
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "!="
@@ -169,10 +169,10 @@ modules:
         - oid: FOUNDRY-SN-AGENT-MIB::snAgentBrd2Table
           value: FOUNDRY-SN-AGENT-MIB::snAgentBrd2RedundantStatus
           num_oid: '.1.3.6.1.4.1.1991.1.1.2.2.2.1.7.{{ $index }}'
-          descr: 'Unit {{ $subindex0 }} Module {{ $subindex1 }} Redundancy Status'
+          descr: 'Switch {{ $subindex0 }}.{{ $subindex1 }} Management'
           index: '{{ $index }}'
-          group: 'Switch Module Status'
-          state_name: snAgentBrd2RedundantStatus
+          group: 'Stack Topology'
+          state_name: 'Switch {{ $subindex0 }}.{{ $subindex1 }} Management'
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "="
@@ -187,10 +187,10 @@ modules:
         - oid: FOUNDRY-SN-AGENT-MIB::snAgentBrdTable
           value: FOUNDRY-SN-AGENT-MIB::snAgentBrdRedundantStatus
           num_oid: '.1.3.6.1.4.1.1991.1.1.2.2.1.1.13.{{ $index }}'
-          descr: 'Module {{ $index }} Redundancy Status'
+          descr: 'Switch {{ $index }} Management Redundancy'
           index: '{{ $index }}'
-          group: 'Switch Module Status'
-          state_name: snAgentBrdRedundantStatus
+          group: 'Stack Topology'
+          state_name: 'Management Redundancy Status'
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "!="
@@ -208,7 +208,7 @@ modules:
           num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.5.{{ $index }}'
           descr: 'Unit {{ $index }} Management View'
           group: 'Stack Topology'
-          state_name: snStackingOperUnitState
+          state_name: 'Unit {{ $index }} Management View'
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "="
@@ -225,11 +225,11 @@ modules:
           num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.{{ $index }}'
           descr: 'Unit {{ $index }} Stack Role'
           group: 'Stack Topology'
-          state_name: snStackingOperUnitRole
+          state_name: 'Unit {{ $index }} Stack Role'
           states:
             - {value: 1, descr: "Other / Unknown", graph: 0, generic: 3}
-            - {value: 2, descr: "Active Controller", graph: 0, generic: 0}
-            - {value: 3, descr: "Standby Controller", graph: 0, generic: 0}
+            - {value: 2, descr: "Stack Master", graph: 0, generic: 0}
+            - {value: 3, descr: "Stack Standby", graph: 0, generic: 0}
             - {value: 4, descr: "Stack Member", graph: 0, generic: 0}
             - {value: 5, descr: "Standalone", graph: 0, generic: 0}
 
