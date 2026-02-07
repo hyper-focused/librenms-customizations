@@ -82,7 +82,7 @@ modules:
         - oid: FOUNDRY-SN-AGENT-MIB::snChasPwrSupplyTable
           value: FOUNDRY-SN-AGENT-MIB::snChasPwrSupplyOperStatus
           num_oid: '.1.3.6.1.4.1.1991.1.1.1.2.1.1.3.{{ $index }}'
-          descr: 'Power Supply {{ $index }}'
+          descr: 'Power Supply {{ $index }} Status'
           index: '{{ $index }}'
           group: 'Power Supply Status'
           state_name: snChasPwrSupplyOperStatus
@@ -91,9 +91,9 @@ modules:
               op: "!="
               value: 5
           states:
-            - {value: 1, descr: other, graph: 0, generic: 3}
-            - {value: 2, descr: normal, graph: 0, generic: 0}
-            - {value: 3, descr: failure, graph: 0, generic: 2}
+            - {value: 1, descr: Other, graph: 0, generic: 3}
+            - {value: 2, descr: Normal, graph: 0, generic: 0}
+            - {value: 3, descr: Failed, graph: 0, generic: 2}
         # Power Supply Status - Table 2 (stacked configurations)
         # Index format: {unit}.{ps_number} (e.g., 1.1, 1.2, 2.1, 2.2)
         # Returns: 1=other, 2=normal, 3=failure
@@ -101,7 +101,7 @@ modules:
         - oid: FOUNDRY-SN-AGENT-MIB::snChasPwrSupply2Table
           value: FOUNDRY-SN-AGENT-MIB::snChasPwrSupply2OperStatus
           num_oid: '.1.3.6.1.4.1.1991.1.1.1.2.2.1.4.{{ $index }}'
-          descr: 'Unit {{ $subindex0 }} Power Supply {{ $subindex1 }}'
+          descr: 'Unit {{ $subindex0 }} Power Supply {{ $subindex1 }} Status'
           index: '{{ $index }}'
           group: 'Power Supply Status'
           state_name: snChasPwrSupply2OperStatus
@@ -110,15 +110,15 @@ modules:
               op: "="
               value: 5
           states:
-            - {value: 1, descr: other, graph: 0, generic: 3}
-            - {value: 2, descr: normal, graph: 0, generic: 0}
-            - {value: 3, descr: failure, graph: 0, generic: 2}
+            - {value: 1, descr: Other, graph: 0, generic: 3}
+            - {value: 2, descr: Normal, graph: 0, generic: 0}
+            - {value: 3, descr: Failed, graph: 0, generic: 2}
         # Fan Status - Table 1 (standard/standalone)
         # Returns: 1=other, 2=normal, 3=failure
         - oid: FOUNDRY-SN-AGENT-MIB::snChasFanTable
           value: FOUNDRY-SN-AGENT-MIB::snChasFanOperStatus
           num_oid: '.1.3.6.1.4.1.1991.1.1.1.3.1.1.3.{{ $index }}'
-          descr: 'Fan {{ $index }}'
+          descr: 'Fan {{ $index }} Status'
           index: '{{ $index }}'
           group: 'Fan Status'
           state_name: snChasFanOperStatus
@@ -127,16 +127,16 @@ modules:
               op: "!="
               value: 5
           states:
-            - {value: 1, descr: other, graph: 0, generic: 3}
-            - {value: 2, descr: normal, graph: 0, generic: 0}
-            - {value: 3, descr: failure, graph: 0, generic: 2}
+            - {value: 1, descr: Other, graph: 0, generic: 3}
+            - {value: 2, descr: Normal, graph: 0, generic: 0}
+            - {value: 3, descr: Failed, graph: 0, generic: 2}
         # Fan Status - Table 2 (stacked configurations)
         # Index format: {unit}.{fan_index} (e.g., 1.1, 1.2, 2.1, 2.2)
         # Returns: 1=other, 2=normal, 3=failure
         - oid: FOUNDRY-SN-AGENT-MIB::snChasFan2Table
           value: FOUNDRY-SN-AGENT-MIB::snChasFan2OperStatus
           num_oid: '.1.3.6.1.4.1.1991.1.1.1.3.2.1.4.{{ $index }}'
-          descr: 'Unit {{ $subindex0 }} Fan {{ $subindex1 }}'
+          descr: 'Unit {{ $subindex0 }} Fan {{ $subindex1 }} Status'
           index: '{{ $index }}'
           group: 'Fan Status'
           state_name: snChasFan2OperStatus
@@ -145,9 +145,9 @@ modules:
               op: "="
               value: 5
           states:
-            - {value: 1, descr: other, graph: 0, generic: 3}
-            - {value: 2, descr: normal, graph: 0, generic: 0}
-            - {value: 3, descr: failure, graph: 0, generic: 2}
+            - {value: 1, descr: Other, graph: 0, generic: 3}
+            - {value: 2, descr: Normal, graph: 0, generic: 0}
+            - {value: 3, descr: Failed, graph: 0, generic: 2}
 
         # Board Module Status - Per-unit board operational status (stacked)
         # Index format: {unit}.{slot} (e.g., 1.1, 2.1, 3.1)
@@ -157,20 +157,20 @@ modules:
           num_oid: '.1.3.6.1.4.1.1991.1.1.2.2.2.1.6.{{ $index }}'
           descr: 'Unit {{ $subindex0 }} Module {{ $subindex1 }} Status'
           index: '{{ $index }}'
-          group: 'Module Status'
+          group: 'Switch Module Status'
           state_name: snAgentBrd2ModuleStatus
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "="
               value: 5
           states:
-            - {value: 0, descr: empty, graph: 0, generic: 3}
-            - {value: 2, descr: goingDown, graph: 0, generic: 2}
-            - {value: 3, descr: rejected, graph: 0, generic: 2}
-            - {value: 4, descr: bad, graph: 0, generic: 2}
-            - {value: 8, descr: configured, graph: 0, generic: 1}
-            - {value: 9, descr: comingUp, graph: 0, generic: 1}
-            - {value: 10, descr: running, graph: 0, generic: 0}
+            - {value: 0, descr: Empty, graph: 0, generic: 3}
+            - {value: 2, descr: Stopping, graph: 0, generic: 1}
+            - {value: 3, descr: Rejected, graph: 0, generic: 2}
+            - {value: 4, descr: Failed, graph: 0, generic: 2}
+            - {value: 8, descr: Configured, graph: 0, generic: 1}
+            - {value: 9, descr: Starting, graph: 0, generic: 1}
+            - {value: 10, descr: Running, graph: 0, generic: 0}
         # Board Redundancy Status - Per-unit redundancy status (stacked)
         # Index format: {unit}.{slot} (e.g., 1.1, 2.1, 3.1)
         # Returns: 1=other, 2=active, 3=standby, 4=crashed, 5=comingUp
@@ -181,7 +181,7 @@ modules:
           num_oid: '.1.3.6.1.4.1.1991.1.1.2.2.2.1.7.{{ $index }}'
           descr: 'Unit {{ $subindex0 }} Module {{ $subindex1 }} Redundancy Status'
           index: '{{ $index }}'
-          group: 'Module Status'
+          group: 'Switch Module Status'
           state_name: snAgentBrd2RedundantStatus
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
@@ -191,11 +191,11 @@ modules:
               op: "="
               value: 1
           states:
-            - {value: 1, descr: other, graph: 0, generic: 3}
-            - {value: 2, descr: active, graph: 0, generic: 0}
-            - {value: 3, descr: standby, graph: 0, generic: 0}
-            - {value: 4, descr: crashed, graph: 0, generic: 2}
-            - {value: 5, descr: comingUp, graph: 0, generic: 1}
+            - {value: 1, descr: Other, graph: 0, generic: 3}
+            - {value: 2, descr: Active, graph: 0, generic: 0}
+            - {value: 3, descr: Standby, graph: 0, generic: 0}
+            - {value: 4, descr: Crashed, graph: 0, generic: 2}
+            - {value: 5, descr: Starting, graph: 0, generic: 1}
 
         # Stack Configuration State - DISABLED
         # This OID does NOT exist on firmware 08.0.30u
@@ -217,7 +217,7 @@ modules:
         - oid: FOUNDRY-SN-STACKING-MIB::snStackingOperUnitTable
           value: FOUNDRY-SN-STACKING-MIB::snStackingOperUnitState
           num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.5.{{ $index }}'
-          descr: 'Unit {{ $index }} Topology'
+          descr: 'Unit {{ $index }} Management View'
           group: 'Stack Topology'
           state_name: snStackingOperUnitState
           skip_values:
@@ -225,10 +225,10 @@ modules:
               op: "="
               value: 5
           states:
-            - {value: 1, descr: local, graph: 0, generic: 0}
-            - {value: 2, descr: remote, graph: 0, generic: 0}
-            - {value: 3, descr: reserved, graph: 0, generic: 1}
-            - {value: 4, descr: empty, graph: 0, generic: 2}
+            - {value: 1, descr: Local, graph: 0, generic: 0}
+            - {value: 2, descr: Remote, graph: 0, generic: 0}
+            - {value: 3, descr: Reserved, graph: 0, generic: 1}
+            - {value: 4, descr: Empty, graph: 0, generic: 2}
 
         # Stack Unit Role - Verified working on 6-unit stack
         # Returns: 2=active (master), 3=standby, 4=member, 5=standalone
@@ -236,7 +236,7 @@ modules:
         - oid: FOUNDRY-SN-STACKING-MIB::snStackingOperUnitTable
           value: FOUNDRY-SN-STACKING-MIB::snStackingOperUnitRole
           num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.{{ $index }}'
-          descr: 'Unit {{ $index }} Role'
+          descr: 'Unit {{ $index }} Stack Role'
           group: 'Stack Topology'
           state_name: snStackingOperUnitRole
           skip_values:
@@ -244,8 +244,8 @@ modules:
               op: "="
               value: 5
           states:
-            - {value: 1, descr: other, graph: 0, generic: 3}
-            - {value: 2, descr: active, graph: 0, generic: 0}
-            - {value: 3, descr: standby, graph: 0, generic: 0}
-            - {value: 4, descr: member, graph: 0, generic: 0}
-            - {value: 5, descr: standalone, graph: 0, generic: 0}
+            - {value: 1, descr: "Other / Unknown", graph: 0, generic: 3}
+            - {value: 2, descr: "Active Controller", graph: 0, generic: 0}
+            - {value: 3, descr: "Standby Controller", graph: 0, generic: 0}
+            - {value: 4, descr: "Stack Member", graph: 0, generic: 0}
+            - {value: 5, descr: "Standalone", graph: 0, generic: 0}
