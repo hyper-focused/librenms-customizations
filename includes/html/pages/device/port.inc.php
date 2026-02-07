@@ -110,8 +110,8 @@ if (dbFetchCell("SELECT COUNT(*) FROM `sensors` WHERE `device_id` = ? AND `entPh
     $menu_options['sensors'] = 'Health';
 }
 
-// PoE tab — show if brocade-poe sensors are linked to this port
-if (dbFetchCell("SELECT COUNT(*) FROM `sensors` WHERE `device_id` = ? AND `entPhysicalIndex` = ? AND entPhysicalIndex_measured = 'ports' AND sensor_type = 'brocade-poe'", [$device['device_id'], $port->ifIndex])) {
+// PoE tab — show if PoE sensors are linked to this port
+if (dbFetchCell("SELECT COUNT(*) FROM `sensors` WHERE `device_id` = ? AND `entPhysicalIndex` = ? AND entPhysicalIndex_measured = 'ports' AND `group` LIKE 'PoE%'", [$device['device_id'], $port->ifIndex])) {
     $menu_options['poe'] = 'PoE';
 }
 

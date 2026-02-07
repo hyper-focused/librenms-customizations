@@ -40,5 +40,8 @@ captures/
 # Local debug / one-off scripts
 debug_stack_detection.php
 
+# Upstream LibreNMS reference clone (for development comparison)
+.upstream/
+
 # MCP server configuration (contains credentials)
 .mcp.json

@@ -2,18 +2,17 @@
 /**
  * PoE Power Budget overview module — displayed in the LEFT column of the device overview page.
  * Shows unit-level PoE capacity/consumption with progress bar and port summary.
- * Only renders for devices with brocade-poe sensors.
+ * Renders for any device with PoE-grouped sensors (group prefix 'PoE').
  */
 
-$poeSensors = DeviceCache::getPrimary()->sensors->where('sensor_type', 'brocade-poe');
+$poeSensors = DeviceCache::getPrimary()->sensors->filter(fn ($s) => str_starts_with($s->group ?? '', 'PoE'));
 
 if ($poeSensors->isNotEmpty()) {
-    // Separate unit-level and port-level sensors
-    $unitCapacity = $poeSensors->filter(fn ($s) => str_starts_with($s->sensor_index, 'poe-unit-capacity-'));
-    $unitAvailable = $poeSensors->filter(fn ($s) => str_starts_with($s->sensor_index, 'poe-unit-available-'));
-    $portLimitSensors = $poeSensors->filter(fn ($s) => str_ends_with($s->sensor_index, '.limit'));
-    $portConsumptionSensors = $poeSensors->filter(fn ($s) => str_ends_with($s->sensor_index, '.consumption')
-        && ! str_starts_with($s->sensor_index, 'poe-unit-'));
+    // Separate unit-level and port-level sensors by group and description keywords
+    $unitCapacity = $poeSensors->filter(fn ($s) => $s->group === 'PoE Power Budget' && str_contains($s->sensor_descr, 'Capacity'));
+    $unitAvailable = $poeSensors->filter(fn ($s) => $s->group === 'PoE Power Budget' && str_contains($s->sensor_descr, 'Available'));
+    $portLimitSensors = $poeSensors->filter(fn ($s) => $s->group === 'PoE Port Power' && str_contains($s->sensor_descr, 'Limit'));
+    $portConsumptionSensors = $poeSensors->filter(fn ($s) => $s->group === 'PoE Port Power' && str_contains($s->sensor_descr, 'Consumption'));
 
     $portsWithPoE = $portLimitSensors->count();
     $portsConsuming = $portConsumptionSensors->filter(fn ($s) => $s->sensor_current > 0)->count();
@@ -28,11 +27,16 @@ if ($poeSensors->isNotEmpty()) {
               <div class="panel-body">';
 
     // Unit-level capacity with calculated consumption
-    $unitIndexes = $unitCapacity->pluck('sensor_index')->map(fn ($idx) => (int) str_replace('poe-unit-capacity-', '', $idx))->unique()->sort();
+    // Extract unit numbers from sensor descriptions (e.g., "Unit 1 PoE Capacity" → 1)
+    $unitIndexes = $unitCapacity->map(function ($s) {
+        preg_match('/Unit\s+(\d+)/i', $s->sensor_descr, $m);
+
+        return (int) ($m[1] ?? 0);
+    })->unique()->sort();
 
     foreach ($unitIndexes as $unitNum) {
-        $capSensor = $unitCapacity->firstWhere('sensor_index', "poe-unit-capacity-{$unitNum}");
-        $availSensor = $unitAvailable->firstWhere('sensor_index', "poe-unit-available-{$unitNum}");
+        $capSensor = $unitCapacity->first(fn ($s) => str_contains($s->sensor_descr, "Unit {$unitNum}"));
+        $availSensor = $unitAvailable->first(fn ($s) => str_contains($s->sensor_descr, "Unit {$unitNum}"));
 
         $capacity = $capSensor ? $capSensor->sensor_current : 0;
         $available = $availSensor ? $availSensor->sensor_current : $capacity;

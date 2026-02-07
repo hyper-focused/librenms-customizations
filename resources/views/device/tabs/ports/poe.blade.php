@@ -56,8 +56,8 @@
                 @foreach($data['ports'] as $port)
                     @php
                         $portPoe = ($data['poeSensors'][$port->ifIndex] ?? collect());
-                        $poeLimit = $portPoe->first(fn($s) => str_ends_with($s->sensor_index, '.limit'));
-                        $poeConsumption = $portPoe->first(fn($s) => str_ends_with($s->sensor_index, '.consumption'));
+                        $poeLimit = $portPoe->first(fn($s) => str_contains($s->sensor_descr, 'Limit'));
+                        $poeConsumption = $portPoe->first(fn($s) => str_contains($s->sensor_descr, 'Consumption'));
                         $limitVal = $poeLimit?->sensor_current ?? 0;
                         $consumeVal = $poeConsumption?->sensor_current ?? 0;
                         $usage = $limitVal > 0 ? round(($consumeVal / $limitVal) * 100, 1) : 0;

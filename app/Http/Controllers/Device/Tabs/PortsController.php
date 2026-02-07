@@ -159,9 +159,9 @@ class PortsController implements DeviceTab
 
     private function poeData(Device $device): array
     {
-        // Fetch all brocade-poe port-level sensors for this device
+        // Fetch all PoE port-level sensors for this device (any vendor)
         $poeSensors = Sensor::where('device_id', $device->device_id)
-            ->where('sensor_type', 'brocade-poe')
+            ->where('group', 'PoE Port Power')
             ->where('entPhysicalIndex_measured', 'ports')
             ->get()
             ->groupBy('entPhysicalIndex');
@@ -175,20 +175,20 @@ class PortsController implements DeviceTab
 
         // Fetch unit-level capacity sensors for summary
         $unitSensors = Sensor::where('device_id', $device->device_id)
-            ->where('sensor_type', 'brocade-poe')
             ->where('group', 'PoE Power Budget')
             ->get();
 
         // Build unit data: consumption = capacity - available
-        // (.3 OID returns remaining/available power despite MIB name "ConsumedPower")
         $unitData = [];
         foreach ($unitSensors as $sensor) {
-            if (str_starts_with($sensor->sensor_index, 'poe-unit-capacity-')) {
-                $unitNum = (int) str_replace('poe-unit-capacity-', '', $sensor->sensor_index);
-                $unitData[$unitNum]['capacity'] = $sensor->sensor_current;
-            } elseif (str_starts_with($sensor->sensor_index, 'poe-unit-available-')) {
-                $unitNum = (int) str_replace('poe-unit-available-', '', $sensor->sensor_index);
-                $unitData[$unitNum]['available'] = $sensor->sensor_current;
+            // Extract unit number from sensor description (e.g., "Unit 1 PoE Capacity")
+            if (preg_match('/Unit\s+(\d+)/i', $sensor->sensor_descr, $m)) {
+                $unitNum = (int) $m[1];
+                if (str_contains($sensor->sensor_descr, 'Capacity')) {
+                    $unitData[$unitNum]['capacity'] = $sensor->sensor_current;
+                } elseif (str_contains($sensor->sensor_descr, 'Available')) {
+                    $unitData[$unitNum]['available'] = $sensor->sensor_current;
+                }
             }
         }
         foreach ($unitData as $unitNum => &$unit) {
@@ -372,8 +372,8 @@ class PortsController implements DeviceTab
             $tabs[] = ['name' => __('Port Security'), 'url' => 'portsecurity'];
         }
 
-        // PoE tab — only show if device has brocade-poe sensors
-        if (Sensor::where('device_id', $device->device_id)->where('sensor_type', 'brocade-poe')->exists()) {
+        // PoE tab — show if device has any PoE sensors
+        if (Sensor::where('device_id', $device->device_id)->where('group', 'LIKE', 'PoE%')->exists()) {
             $tabs[] = ['name' => 'PoE', 'url' => 'poe'];
         }
 

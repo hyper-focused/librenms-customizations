@@ -10,7 +10,7 @@ use LibreNMS\Util\Html;
 $sensors = \App\Models\Sensor::where('device_id', $device['device_id'])
     ->where('entPhysicalIndex', $port['ifIndex'])
     ->where('entPhysicalIndex_measured', 'ports')
-    ->where('sensor_type', 'brocade-poe')
+    ->where('group', 'LIKE', 'PoE%')
     ->orderBy('sensor_descr')
     ->get();
 
@@ -20,8 +20,8 @@ if ($sensors->isEmpty()) {
     return;
 }
 
-$limitSensor = $sensors->first(fn ($s) => str_ends_with($s->sensor_index, '.limit'));
-$consumptionSensor = $sensors->first(fn ($s) => str_ends_with($s->sensor_index, '.consumption'));
+$limitSensor = $sensors->first(fn ($s) => str_contains($s->sensor_descr, 'Limit'));
+$consumptionSensor = $sensors->first(fn ($s) => str_contains($s->sensor_descr, 'Consumption'));
 
 // Summary bar
 if ($limitSensor) {
@@ -62,6 +62,12 @@ foreach ($sensors as $sensor) {
 
     if (! is_null($sensor->sensor_limit_low)) {
         echo ' ' . Html::severityToLabel(Severity::Unknown, 'low: ' . $sensor->formatValue('sensor_limit_low'));
+    }
+    if (! is_null($sensor->sensor_limit_low_warn)) {
+        echo ' ' . Html::severityToLabel(Severity::Unknown, 'low_warn: ' . $sensor->formatValue('sensor_limit_low_warn'));
+    }
+    if (! is_null($sensor->sensor_limit_warn)) {
+        echo ' ' . Html::severityToLabel(Severity::Unknown, 'high_warn: ' . $sensor->formatValue('sensor_limit_warn'));
     }
     if (! is_null($sensor->sensor_limit)) {
         echo ' ' . Html::severityToLabel(Severity::Unknown, 'high: ' . $sensor->formatValue('sensor_limit'));
