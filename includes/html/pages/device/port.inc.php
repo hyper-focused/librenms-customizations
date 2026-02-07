@@ -106,8 +106,7 @@ if ($port->transceivers()->exists()) {
     $menu_options['transceiver'] = __('port.transceiver');
 }
 
-// Health tab — only show if non-PoE sensors are linked to this port
-if (dbFetchCell("SELECT COUNT(*) FROM `sensors` WHERE `device_id` = ? AND `entPhysicalIndex` = ? AND entPhysicalIndex_measured = 'ports' AND sensor_type != 'brocade-poe'", [$device['device_id'], $port->ifIndex])) {
+if (dbFetchCell("SELECT COUNT(*) FROM `sensors` WHERE `device_id` = ? AND `entPhysicalIndex` = ? AND entPhysicalIndex_measured = 'ports'", [$device['device_id'], $port->ifIndex])) {
     $menu_options['sensors'] = 'Health';
 }
 

@@ -3,12 +3,12 @@
 use LibreNMS\Enum\Sensor as SensorEnum;
 use LibreNMS\Util\Html;
 
-$sensors = DeviceCache::getPrimary()->sensors->where('sensor_class', $sensor_class)->where('group', '!=', 'transceiver')
-    ->when(! empty($sensor_exclude_types), fn ($c) => $c->whereNotIn('sensor_type', $sensor_exclude_types))
+$sensors = DeviceCache::getPrimary()->sensors->where('sensor_class', $sensor_class)
+    ->whereNotIn('group', ['transceiver', 'PoE Power Budget', 'PoE Port Power'])
     ->sortBy([
     ['group', 'asc'],
     ['sensor_descr', 'asc'],
-]); // cache all sensors on device and exclude transceivers
+]); // cache all sensors on device and exclude transceivers and PoE (shown via dedicated widgets)
 
 if ($sensors->isNotEmpty()) {
     $sensor_fa_icon = 'fa-' . SensorEnum::from($sensor_class)->icon();

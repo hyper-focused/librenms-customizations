@@ -157,7 +157,7 @@ if (! empty($poePortIndex) && (! empty($poeStatus) || ! empty($poeWattage) || ! 
             $index,  // entPhysicalIndex = port ifIndex
             'ports', // entPhysicalIndex_measured — links to port page
             null,    // user_func
-            null     // group
+            'PoE Port Power'
         );
 
         // Port PoE Current Consumption
@@ -181,7 +181,7 @@ if (! empty($poePortIndex) && (! empty($poeStatus) || ! empty($poeWattage) || ! 
                 $index,  // entPhysicalIndex = port ifIndex
                 'ports', // entPhysicalIndex_measured — links to port page
                 null,    // user_func
-                null     // group
+                'PoE Port Power'
             );
         }
     }
