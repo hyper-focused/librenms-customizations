@@ -30,6 +30,7 @@ PATHS=(
   "includes/html/pages/device/overview.inc.php"
   "includes/html/pages/device/overview/sensors/power.inc.php"
   "includes/html/pages/device/overview/generic/sensor.inc.php"
+  "includes/html/pages/device/health.inc.php"
   "includes/html/pages/device/health/power.inc.php"
   "includes/html/pages/device/health/sensors.inc.php"
   "includes/html/pages/device/port.inc.php"

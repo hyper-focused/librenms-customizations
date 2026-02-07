@@ -663,91 +663,173 @@ class BrocadeStack extends OS implements ProcessorDiscovery
 
     /**
      * Rewrite hardware names to friendly format
-     * Maps internal Foundry names to user-friendly names
+     *
+     * The sysObjectID resolves via FOUNDRY-SN-ROOT-MIB to names like:
+     *   snFCX648SSwitch, snFCX648SRouter, snFCX648SAdvRouter, snFCX648SHPOERouter
+     * The suffix indicates firmware type: Switch=L2, Router=L3, AdvRouter=L3 Advanced.
+     * We strip the suffix before lookup so one map entry handles all variants.
      *
      * @return void
      */
     private function rewriteHardware(): void
     {
-        $rewrite_brocade_stack_hardware = [
-            // FastIron: FCX Series
-            'snFCX624SSwitch' => 'FCX624S',
-            'snFCX624Switch' => 'FCX624',
-            'snFCX624SHPOESwitch' => 'FCX624S PoE+',
-            'snFCX648SSwitch' => 'FCX648S',
-            'snFCX648Switch' => 'FCX648',
-            'snFCX648SHPOESwitch' => 'FCX648S PoE+',
-            'snFastIronStackFCXSwitch' => 'FCX Stack',
-            // FastIron: FWS/FLS (add OID keys as discovered from MIBs)
-            
-            // ICX 6430 Series
-            'snICX643024Switch' => 'ICX6430-24',
-            'snICX643024HPOESwitch' => 'ICX6430-24 PoE+',
-            'snICX643048Switch' => 'ICX6430-48',
-            'snICX643048HPOESwitch' => 'ICX6430-48 PoE+',
-            'snICX6430C12Switch' => 'ICX6430-C12',
-            'snFastIronStackICX6430Switch' => 'ICX6430 Stack',
-            
-            // ICX 6450 Series
-            'snICX645024Switch' => 'ICX6450-24',
-            'snICX645024HPOESwitch' => 'ICX6450-24 PoE+',
-            'snICX645048Switch' => 'ICX6450-48',
-            'snICX645048HPOESwitch' => 'ICX6450-48 PoE+',
-            'snICX6450C12PDSwitch' => 'ICX6450-C12-PD',
-            'snFastIronStackICX6450Switch' => 'ICX6450 Stack',
-            
-            // ICX 6610 Series
-            'snICX661024Switch' => 'ICX6610-24',
-            'snICX661024HPOESwitch' => 'ICX6610-24 PoE+',
-            'snICX661024FSwitch' => 'ICX6610-24F',
-            'snICX661048Switch' => 'ICX6610-48',
-            'snICX661048HPOESwitch' => 'ICX6610-48 PoE+',
-            'snFastIronStackICX6610Switch' => 'ICX6610 Stack',
-            
-            // ICX 6650 Series
-            'snICX665064Switch' => 'ICX6650-64',
-            
-            // ICX 7150 Series
-            'snICX715024Switch' => 'ICX7150-24',
-            'snICX715024POESwitch' => 'ICX7150-24 PoE+',
-            'snICX715024FSwitch' => 'ICX7150-24F',
-            'snICX715048Switch' => 'ICX7150-48',
-            'snICX715048POESwitch' => 'ICX7150-48 PoE+',
-            'snICX7150C12POESwitch' => 'ICX7150-C12 PoE+',
-            'snICX7150C08PSwitch' => 'ICX7150-C08 PoE+',
-            'snFastIronStackICX7150Switch' => 'ICX7150 Stack',
-            
-            // ICX 7250 Series
-            'snICX725024Switch' => 'ICX7250-24',
-            'snICX725024HPOESwitch' => 'ICX7250-24 PoE+',
-            'snICX725024GSwitch' => 'ICX7250-24G',
-            'snICX725048Switch' => 'ICX7250-48',
-            'snICX725048HPOESwitch' => 'ICX7250-48 PoE+',
-            'snFastIronStackICX7250Switch' => 'ICX7250 Stack',
-            
-            // ICX 7450 Series
-            'snICX745024Switch' => 'ICX7450-24',
-            'snICX745024HPOESwitch' => 'ICX7450-24 PoE+',
-            'snICX745048Switch' => 'ICX7450-48',
-            'snICX745048HPOESwitch' => 'ICX7450-48 PoE+',
-            'snICX745048FSwitch' => 'ICX7450-48F',
-            'snFastIronStackICX7450Switch' => 'ICX7450 Stack',
-            
-            // ICX 7750 Series
-            'snICX775026QSwitch' => 'ICX7750-26Q',
-            'snICX775048CSwitch' => 'ICX7750-48C',
-            'snICX775048FSwitch' => 'ICX7750-48F',
-            'snFastIronStackICX7750Switch' => 'ICX7750 Stack',
-            
-            // Mixed Stack
-            'snFastIronStackMixedStackSwitch' => 'Mixed Stack',
-        ];
+        $hardware = $this->getDevice()->hardware;
+        if (empty($hardware)) {
+            return;
+        }
 
-        $this->getDevice()->hardware = str_replace(
-            array_keys($rewrite_brocade_stack_hardware),
-            array_values($rewrite_brocade_stack_hardware),
-            $this->getDevice()->hardware
-        );
+        // Strip firmware variant suffix to get the base MIB name
+        if (! preg_match('/^(.+?)(?:Adv)?(?:Switch|Router)$/', $hardware, $matches)) {
+            return;
+        }
+
+        $baseName = $matches[1];
+
+        // Look up the base name in the known hardware map
+        $rewriteMap = $this->getHardwareRewriteMap();
+        if (isset($rewriteMap[$baseName])) {
+            $this->getDevice()->hardware = $rewriteMap[$baseName];
+
+            return;
+        }
+
+        // Regex fallback for models not yet in the map
+        $this->rewriteHardwareFallback($baseName);
+    }
+
+    /**
+     * Map of base MIB names (without Switch/Router/AdvRouter suffix) to friendly names
+     *
+     * @return array<string, string>
+     */
+    private function getHardwareRewriteMap(): array
+    {
+        return [
+            // FastIron: FCX Series
+            'snFCX624S' => 'FCX624S',
+            'snFCX624' => 'FCX624',
+            'snFCX624SHPOE' => 'FCX624S PoE+',
+            'snFCX648S' => 'FCX648S',
+            'snFCX648' => 'FCX648',
+            'snFCX648SHPOE' => 'FCX648S PoE+',
+            'snFastIronStackFCX' => 'FCX Stack',
+
+            // ICX 6430 Series
+            'snICX643024' => 'ICX6430-24',
+            'snICX643024HPOE' => 'ICX6430-24 PoE+',
+            'snICX643048' => 'ICX6430-48',
+            'snICX643048HPOE' => 'ICX6430-48 PoE+',
+            'snICX6430C12' => 'ICX6430-C12',
+            'snFastIronStackICX6430' => 'ICX6430 Stack',
+
+            // ICX 6450 Series
+            'snICX645024' => 'ICX6450-24',
+            'snICX645024HPOE' => 'ICX6450-24 PoE+',
+            'snICX645048' => 'ICX6450-48',
+            'snICX645048HPOE' => 'ICX6450-48 PoE+',
+            'snICX6450C12PD' => 'ICX6450-C12-PD',
+            'snFastIronStackICX6450' => 'ICX6450 Stack',
+
+            // ICX 6610 Series
+            'snICX661024' => 'ICX6610-24',
+            'snICX661024HPOE' => 'ICX6610-24 PoE+',
+            'snICX661024F' => 'ICX6610-24F',
+            'snICX661048' => 'ICX6610-48',
+            'snICX661048HPOE' => 'ICX6610-48 PoE+',
+            'snFastIronStackICX6610' => 'ICX6610 Stack',
+
+            // ICX 6650 Series
+            'snICX665064' => 'ICX6650-64',
+
+            // ICX 7150 Series
+            'snICX715024' => 'ICX7150-24',
+            'snICX715024POE' => 'ICX7150-24 PoE+',
+            'snICX715024F' => 'ICX7150-24F',
+            'snICX715048' => 'ICX7150-48',
+            'snICX715048POE' => 'ICX7150-48 PoE+',
+            'snICX7150C12POE' => 'ICX7150-C12 PoE+',
+            'snICX7150C08P' => 'ICX7150-C08 PoE+',
+            'snFastIronStackICX7150' => 'ICX7150 Stack',
+
+            // ICX 7250 Series
+            'snICX725024' => 'ICX7250-24',
+            'snICX725024HPOE' => 'ICX7250-24 PoE+',
+            'snICX725024G' => 'ICX7250-24G',
+            'snICX725048' => 'ICX7250-48',
+            'snICX725048HPOE' => 'ICX7250-48 PoE+',
+            'snFastIronStackICX7250' => 'ICX7250 Stack',
+
+            // ICX 7450 Series
+            'snICX745024' => 'ICX7450-24',
+            'snICX745024HPOE' => 'ICX7450-24 PoE+',
+            'snICX745048' => 'ICX7450-48',
+            'snICX745048HPOE' => 'ICX7450-48 PoE+',
+            'snICX745048F' => 'ICX7450-48F',
+            'snFastIronStackICX7450' => 'ICX7450 Stack',
+
+            // ICX 7750 Series
+            'snICX775026Q' => 'ICX7750-26Q',
+            'snICX775048C' => 'ICX7750-48C',
+            'snICX775048F' => 'ICX7750-48F',
+            'snFastIronStackICX7750' => 'ICX7750 Stack',
+
+            // Mixed Stack
+            'snFastIronStackMixedStack' => 'Mixed Stack',
+        ];
+    }
+
+    /**
+     * Regex-based fallback for hardware names not in the known map
+     *
+     * @param string $baseName MIB base name (Switch/Router suffix already stripped)
+     * @return void
+     */
+    private function rewriteHardwareFallback(string $baseName): void
+    {
+        // Stack: snFastIronStack{Family}
+        if (preg_match('/^snFastIronStack(.+)$/', $baseName, $matches)) {
+            $family = ($matches[1] === 'MixedStack') ? 'Mixed' : $matches[1];
+            $this->getDevice()->hardware = "{$family} Stack";
+
+            return;
+        }
+
+        // Individual model with HPOE/POE suffix
+        if (preg_match('/^sn(.+?)(?:HPOE|POE)$/', $baseName, $matches)) {
+            $model = $this->formatIcxModelName($matches[1]);
+            $this->getDevice()->hardware = "{$model} PoE+";
+
+            return;
+        }
+
+        // Compact PoE model (trailing P after port designator, e.g. C08P)
+        if (preg_match('/^sn(.+C\d{2})P$/', $baseName, $matches)) {
+            $model = $this->formatIcxModelName($matches[1]);
+            $this->getDevice()->hardware = "{$model} PoE+";
+
+            return;
+        }
+
+        // Plain model, no PoE
+        if (preg_match('/^sn(.+)$/', $baseName, $matches)) {
+            $this->getDevice()->hardware = $this->formatIcxModelName($matches[1]);
+        }
+    }
+
+    /**
+     * Insert dash in ICX model names between family code and port/variant suffix
+     * e.g., ICX643024 → ICX6430-24, ICX7150C12 → ICX7150-C12
+     *
+     * @param string $rawModel
+     * @return string
+     */
+    private function formatIcxModelName(string $rawModel): string
+    {
+        if (preg_match('/^(ICX\d{4})(.+)$/', $rawModel, $matches)) {
+            return $matches[1] . '-' . $matches[2];
+        }
+
+        return $rawModel;
     }
 
     /**
