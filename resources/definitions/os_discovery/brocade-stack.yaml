@@ -67,7 +67,7 @@ modules:
           descr: 'Power Supply {{ $index }} Status'
           index: '{{ $index }}'
           group: 'Power Supply Status'
-          state_name: 'Power Supply {{ $index }}'
+          state_name: 'Power Supply'
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "!="
@@ -83,7 +83,7 @@ modules:
           descr: 'Unit {{ $subindex0 }} Power Supply {{ $subindex1 }} Status'
           index: '{{ $index }}'
           group: 'Power Supply Status'
-          state_name: 'Power Supply {{ $subindex0 }}.{{ $subindex1 }}'
+          state_name: 'Power Supply'
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "="
@@ -99,7 +99,7 @@ modules:
           descr: 'Fan {{ $index }} Status'
           index: '{{ $index }}'
           group: 'Fan Status'
-          state_name: 'Fan {{ $index }}'
+          state_name: 'Fan State'
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "!="
@@ -115,7 +115,7 @@ modules:
           descr: 'Unit {{ $subindex0 }} Fan {{ $subindex1 }} Status'
           index: '{{ $index }}'
           group: 'Fan Status'
-          state_name: 'Fan {{ $subindex0 }}.{{ $subindex1 }}'
+          state_name: 'Fan State'
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "="
@@ -132,7 +132,7 @@ modules:
           descr: 'Unit {{ $subindex0 }} Module {{ $subindex1 }} Status'
           index: '{{ $index }}'
           group: 'Switch Modules'
-          state_name: 'Switch Module {{ $subindex0 }}.{{ $subindex1 }}'
+          state_name: 'Switch Module State'
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "="
@@ -152,7 +152,7 @@ modules:
           descr: 'Module {{ $index }} Status'
           index: '{{ $index }}'
           group: 'Switch Modules'
-          state_name: 'Switch Module {{ $index }}'
+          state_name: 'Switch Module State'
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "!="
@@ -172,7 +172,7 @@ modules:
           descr: 'Switch {{ $subindex0 }}.{{ $subindex1 }} Management'
           index: '{{ $index }}'
           group: 'Stack Topology'
-          state_name: 'Switch {{ $subindex0 }}.{{ $subindex1 }} Management'
+          state_name: 'Switch Management'
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "="
@@ -190,7 +190,7 @@ modules:
           descr: 'Switch {{ $index }} Management Redundancy'
           index: '{{ $index }}'
           group: 'Stack Topology'
-          state_name: 'Management Redundancy Status'
+          state_name: 'Mgmt. Redundancy Status'
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "!="
@@ -208,7 +208,7 @@ modules:
           num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.5.{{ $index }}'
           descr: 'Unit {{ $index }} Management View'
           group: 'Stack Topology'
-          state_name: 'Unit {{ $index }} Management View'
+          state_name: 'Unit Management View'
           skip_values:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "="
@@ -225,7 +225,7 @@ modules:
           num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.{{ $index }}'
           descr: 'Unit {{ $index }} Stack Role'
           group: 'Stack Topology'
-          state_name: 'Unit {{ $index }} Stack Role'
+          state_name: 'Unit Stack Role'
           states:
             - {value: 1, descr: "Other / Unknown", graph: 0, generic: 3}
             - {value: 2, descr: "Stack Master", graph: 0, generic: 0}
