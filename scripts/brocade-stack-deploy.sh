@@ -39,7 +39,6 @@ PATHS=(
   "includes/html/pages/device/port/sensors.inc.php"
   "includes/html/pages/device/port/poe.inc.php"
   "app/Http/Controllers/Device/Tabs/PortsController.php"
-  "resources/views/device/tabs/ports.blade.php"
   "resources/views/device/tabs/ports/poe.blade.php"
   "docs/brocade-stack-implementation.md"
 )
