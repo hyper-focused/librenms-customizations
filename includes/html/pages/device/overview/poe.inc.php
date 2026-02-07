@@ -11,10 +11,9 @@ if ($poeSensors->isNotEmpty()) {
     // Separate unit-level and port-level sensors by group and description keywords
     $unitCapacity = $poeSensors->filter(fn ($s) => $s->group === 'PoE Power Budget' && str_contains($s->sensor_descr, 'Capacity'));
     $unitAvailable = $poeSensors->filter(fn ($s) => $s->group === 'PoE Power Budget' && str_contains($s->sensor_descr, 'Available'));
-    $portLimitSensors = $poeSensors->filter(fn ($s) => $s->group === 'PoE Port Power' && str_contains($s->sensor_descr, 'Limit'));
     $portConsumptionSensors = $poeSensors->filter(fn ($s) => $s->group === 'PoE Port Power' && str_contains($s->sensor_descr, 'Consumption'));
 
-    $portsWithPoE = $portLimitSensors->count();
+    $portsWithPoE = $portConsumptionSensors->count();
     $portsConsuming = $portConsumptionSensors->filter(fn ($s) => $s->sensor_current > 0)->count();
 
     echo '<div class="row">

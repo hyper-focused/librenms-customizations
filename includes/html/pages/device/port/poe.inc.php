@@ -1,7 +1,7 @@
 <?php
 /**
  * PoE tab for individual port pages.
- * Shows PoE limit and consumption sensors with graphs.
+ * Shows PoE consumption sensor with allocation as sensor_limit threshold line.
  */
 
 use LibreNMS\Enum\Severity;
@@ -20,13 +20,12 @@ if ($sensors->isEmpty()) {
     return;
 }
 
-$limitSensor = $sensors->first(fn ($s) => str_contains($s->sensor_descr, 'Limit'));
 $consumptionSensor = $sensors->first(fn ($s) => str_contains($s->sensor_descr, 'Consumption'));
 
-// Summary bar
-if ($limitSensor) {
-    $limit = $limitSensor->sensor_current;
-    $consumption = $consumptionSensor ? $consumptionSensor->sensor_current : 0;
+// Summary bar (allocation stored as sensor_limit on the consumption sensor)
+if ($consumptionSensor && $consumptionSensor->sensor_limit) {
+    $limit = $consumptionSensor->sensor_limit;
+    $consumption = $consumptionSensor->sensor_current ?? 0;
     $usage = $limit > 0 ? round(($consumption / $limit) * 100, 1) : 0;
     $barClass = $usage > 80 ? 'progress-bar-danger' : ($usage > 50 ? 'progress-bar-warning' : 'progress-bar-success');
 

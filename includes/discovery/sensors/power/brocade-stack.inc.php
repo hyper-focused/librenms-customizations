@@ -7,7 +7,7 @@
  * during the power sensor discovery phase.
  *
  * Unit-level sensors: PoE Capacity + Consumption per stack unit (device overview)
- * Port-level sensors: PoE Limit + Consumption per port (linked to port pages)
+ * Port-level sensors: PoE Consumption per port with allocation as sensor_limit (linked to port pages)
  *
  * Uses FOUNDRY-POE-MIB (.1.3.6.1.4.1.1991.1.1.2.14)
  * YAML cannot handle these sensors due to index resolution issues with
@@ -139,31 +139,12 @@ if (! empty($poePortIndex) && (! empty($poeStatus) || ! empty($poeWattage) || ! 
             continue;
         }
 
-        // Port PoE Allocated Limit
-        discover_sensor(
-            null,
-            'power',
-            $device,
-            $wattageOid,
-            "poe.{$portNum}.limit",
-            'brocade-poe',
-            "{$portLabel} PoE Limit",
-            1000,    // divisor (mW to W)
-            1,       // multiplier
-            0,       // low_limit
-            null, null, null,
-            $wattage / 1000, // current value in W
-            'snmp',
-            $index,  // entPhysicalIndex = port ifIndex
-            'ports', // entPhysicalIndex_measured — links to port page
-            null,    // user_func
-            'PoE Port Power'
-        );
-
-        // Port PoE Current Consumption
+        // Port PoE Consumption (with allocation as sensor_limit for graph overlay)
         $consumedOid = '.1.3.6.1.4.1.1991.1.1.2.14.2.2.1.6.' . $index;
         $consumed = $poeConsumed[$consumedOid] ?? null;
         if ($consumed !== null && is_numeric($consumed)) {
+            $limitW = $wattage / 1000;
+            $warnW = round($limitW * 0.8, 2);
             discover_sensor(
                 null,
                 'power',
@@ -175,7 +156,9 @@ if (! empty($poePortIndex) && (! empty($poeStatus) || ! empty($poeWattage) || ! 
                 1000,    // divisor (mW to W)
                 1,       // multiplier
                 0,       // low_limit
-                null, null, null,
+                null,    // low_warn_limit
+                $warnW,  // warn_limit → orange line at 80% of allocation
+                $limitW, // high_limit → red line at allocation
                 $consumed / 1000, // current value in W
                 'snmp',
                 $index,  // entPhysicalIndex = port ifIndex
