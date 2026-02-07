@@ -708,34 +708,34 @@ class BrocadeStack extends OS implements ProcessorDiscovery
             // FastIron: FCX Series
             'snFCX624S' => 'FCX624S',
             'snFCX624' => 'FCX624',
-            'snFCX624SHPOE' => 'FCX624S PoE+',
+            'snFCX624SHPOE' => 'FCX624S-HPOE',
             'snFCX648S' => 'FCX648S',
             'snFCX648' => 'FCX648',
-            'snFCX648SHPOE' => 'FCX648S PoE+',
-            'snFastIronStackFCX' => 'FCX Stack',
+            'snFCX648SHPOE' => 'FCX648S-HPOE',
+            'snFastIronStackFCX' => 'FastIron FCX Stack',
 
             // ICX 6430 Series
             'snICX643024' => 'ICX6430-24',
-            'snICX643024HPOE' => 'ICX6430-24 PoE+',
+            'snICX643024HPOE' => 'ICX6430-24P PoE+',
             'snICX643048' => 'ICX6430-48',
-            'snICX643048HPOE' => 'ICX6430-48 PoE+',
+            'snICX643048HPOE' => 'ICX6430-48P PoE+',
             'snICX6430C12' => 'ICX6430-C12',
             'snFastIronStackICX6430' => 'ICX6430 Stack',
 
             // ICX 6450 Series
             'snICX645024' => 'ICX6450-24',
-            'snICX645024HPOE' => 'ICX6450-24 PoE+',
+            'snICX645024HPOE' => 'ICX6450-24P PoE+',
             'snICX645048' => 'ICX6450-48',
-            'snICX645048HPOE' => 'ICX6450-48 PoE+',
-            'snICX6450C12PD' => 'ICX6450-C12-PD',
+            'snICX645048HPOE' => 'ICX6450-48P PoE+',
+            'snICX6450C12PD' => 'ICX6450-C12-PD PoE+',
             'snFastIronStackICX6450' => 'ICX6450 Stack',
 
             // ICX 6610 Series
             'snICX661024' => 'ICX6610-24',
-            'snICX661024HPOE' => 'ICX6610-24 PoE+',
+            'snICX661024HPOE' => 'ICX6610-24P PoE+',
             'snICX661024F' => 'ICX6610-24F',
             'snICX661048' => 'ICX6610-48',
-            'snICX661048HPOE' => 'ICX6610-48 PoE+',
+            'snICX661048HPOE' => 'ICX6610-48P PoE+',
             'snFastIronStackICX6610' => 'ICX6610 Stack',
 
             // ICX 6650 Series
@@ -743,27 +743,27 @@ class BrocadeStack extends OS implements ProcessorDiscovery
 
             // ICX 7150 Series
             'snICX715024' => 'ICX7150-24',
-            'snICX715024POE' => 'ICX7150-24 PoE+',
+            'snICX715024POE' => 'ICX7150-24P PoE+',
             'snICX715024F' => 'ICX7150-24F',
             'snICX715048' => 'ICX7150-48',
-            'snICX715048POE' => 'ICX7150-48 PoE+',
-            'snICX7150C12POE' => 'ICX7150-C12 PoE+',
-            'snICX7150C08P' => 'ICX7150-C08 PoE+',
+            'snICX715048POE' => 'ICX7150-48P PoE+',
+            'snICX7150C12POE' => 'ICX7150-C12P PoE+',
+            'snICX7150C08P' => 'ICX7150-C08P PoE+',
             'snFastIronStackICX7150' => 'ICX7150 Stack',
 
             // ICX 7250 Series
             'snICX725024' => 'ICX7250-24',
-            'snICX725024HPOE' => 'ICX7250-24 PoE+',
+            'snICX725024HPOE' => 'ICX7250-24P PoE+',
             'snICX725024G' => 'ICX7250-24G',
             'snICX725048' => 'ICX7250-48',
-            'snICX725048HPOE' => 'ICX7250-48 PoE+',
+            'snICX725048HPOE' => 'ICX7250-48P PoE+',
             'snFastIronStackICX7250' => 'ICX7250 Stack',
 
             // ICX 7450 Series
             'snICX745024' => 'ICX7450-24',
-            'snICX745024HPOE' => 'ICX7450-24 PoE+',
+            'snICX745024HPOE' => 'ICX7450-24P PoE+',
             'snICX745048' => 'ICX7450-48',
-            'snICX745048HPOE' => 'ICX7450-48 PoE+',
+            'snICX745048HPOE' => 'ICX7450-48P PoE+',
             'snICX745048F' => 'ICX7450-48F',
             'snFastIronStackICX7450' => 'ICX7450 Stack',
 
