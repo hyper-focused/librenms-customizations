@@ -35,7 +35,7 @@ PATHS=(
   "resources/views/device/tabs/ports/poe.blade.php"
 )
 
-# Orphan files to remove (previously installed but no longer needed)
+# Orphan files to remove (custom files from previous versions that no longer exist)
 ORPHAN_PATHS=(
   "LibreNMS/OS/Shared/Brocade.php"
   "app/Models/IronwareStackMember.php"
@@ -47,6 +47,10 @@ ORPHAN_PATHS=(
   "database/migrations/2025_01_17_120000_add_brocade_stack_tables.php"
   "includes/discovery/brocade-stack.inc.php"
   "includes/polling/brocade-stack.inc.php"
+)
+
+# Upstream core files we previously overrode — restore to upstream versions via git checkout
+RESTORE_PATHS=(
   "resources/views/device/tabs/ports.blade.php"
   "includes/html/pages/device/overview/sensors/power.inc.php"
   "includes/html/pages/device/health.inc.php"
@@ -106,7 +110,7 @@ for p in "${PATHS[@]}"; do
   fi
 done
 
-# 2. Remove orphan files from previous deployments
+# 2. Remove orphan files (custom files that no longer exist in repo)
 for p in "${ORPHAN_PATHS[@]}"; do
   if [ -f "$LIBRENMS_ROOT/$p" ]; then
     rm -f "$LIBRENMS_ROOT/$p"
@@ -114,7 +118,14 @@ for p in "${ORPHAN_PATHS[@]}"; do
   fi
 done
 
-# 3. Deploy testing files
+# 3. Restore upstream core files we previously overrode
+for p in "${RESTORE_PATHS[@]}"; do
+  if sudo -u librenms bash -c "cd '$LIBRENMS_ROOT' && git checkout HEAD -- '$p'" 2>/dev/null; then
+    echo "  Restored upstream: $p"
+  fi
+done
+
+# 4. Deploy testing files
 echo ""
 echo "Files copied to $LIBRENMS_ROOT:"
 for p in "${PATHS[@]}"; do
@@ -135,7 +146,7 @@ for p in "${PATHS[@]}"; do
 done
 echo ""
 
-# 4. Update .gitignore (only custom files not in upstream LibreNMS)
+# 5. Update .gitignore (only custom files not in upstream LibreNMS)
 GITIGNORE="$LIBRENMS_ROOT/.gitignore"
 if ! sudo -u librenms grep -qF "$GITIGNORE_MARKER" "$GITIGNORE" 2>/dev/null; then
   sudo -u librenms bash -c "cat >> '$GITIGNORE' << 'GITIGNORE_EOF'
@@ -151,7 +162,7 @@ resources/views/device/tabs/ports/poe.blade.php
 GITIGNORE_EOF"
 fi
 
-# 5. Clear caches
+# 6. Clear caches
 cd "$LIBRENMS_ROOT"
 sudo -u librenms php artisan config:clear > /dev/null 2>&1
 sudo -u librenms php artisan cache:clear > /dev/null 2>&1
@@ -165,7 +176,7 @@ sudo -u librenms find . -name "*.cache" -delete 2>/dev/null || true
 sudo -u librenms find . -name "*def*.php" -path "*/cache/*" -delete 2>/dev/null || true
 sudo -u librenms php artisan config:cache > /dev/null 2>&1
 
-# 6. Restart services
+# 7. Restart services
 if systemctl list-units --type=service | grep -q "php.*-fpm" 2>/dev/null; then
   systemctl restart "php*-fpm" 2>/dev/null || true
 fi
