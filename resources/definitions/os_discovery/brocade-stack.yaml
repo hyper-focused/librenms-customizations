@@ -1,27 +1,19 @@
 # Brocade Stack OS Discovery - FastIron + ICX stackable switches
-# Foundry enterprise OID only: .1.3.6.1.4.1.1991
-# OIDs VERIFIED against FCX648 6-unit stack running IronWare 08.0.30uT7f1
-# Testing date: 2026-02-04
+# Foundry enterprise OID: .1.3.6.1.4.1.1991
 #
-# IMPORTANT: Stacked vs Standalone Detection
-#   OID: .1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1 (snStackingOperUnitRole for unit 1)
-#   Returns: INTEGER 2, 3, or 4 on stacking systems (active, standby, member)
-#            INTEGER 5 on standalone systems
-#   Verified on: FCX648 stacks (IronWare 08.0.30u), ICX switches, multiple deployments
+# Stacked vs Standalone Detection:
+#   OID .1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1 (snStackingOperUnitRole for unit 1)
+#   Returns 2/3/4 on stacking systems, 5 on standalone
 #
-# IMPORTANT: Power supply tables are mutually exclusive:
-#   - snChasPwrSupply2Table: Stacked (unit.ps indexing)
-#   - snChasPwrSupplyTable: Standalone (ps indexing only)
+# Table naming convention:
+#   Table 2 (e.g., snChasFan2Table) = stacked, index: {unit}.{item}
+#   Table 1 (e.g., snChasFanTable)  = standalone, index: {item}
 ---
 mib: FOUNDRY-SN-AGENT-MIB
 modules:
   mempools:
     data:
-      # System-wide DRAM (verified on IronWare 08.0.30u)
-      # Using numerical OIDs because LibreNMS MIB can't resolve symbolic names
-      # OID .1.3.6.1.4.1.1991.1.1.2.1.54.0 = Total DRAM (bytes)
-      # OID .1.3.6.1.4.1.1991.1.1.2.1.55.0 = Free DRAM (bytes)
-      # OID .1.3.6.1.4.1.1991.1.1.2.1.53.0 = DRAM Utilization (percent)
+      # Numerical OIDs required — LibreNMS MIB can't resolve symbolic names
       - total: .1.3.6.1.4.1.1991.1.1.2.1.54.0
         free: .1.3.6.1.4.1.1991.1.1.2.1.55.0
         descr: 'System Memory'
@@ -33,11 +25,7 @@ modules:
     version: FOUNDRY-SN-AGENT-MIB::snAgImgVer.0
   processors:
     data:
-      # Per-unit CPU utilization (works on IronWare 08.0.30u)
-      # Index format: {unit}.{slot}.{cpu_num}.{interval}
-      # Filter for 1-second interval only (interval=1)
-      # OID .1.3.6.1.4.1.1991.1.1.2.11.1.1.5 = snAgentCpuUtilPercent
-      # OID .1.3.6.1.4.1.1991.1.1.2.11.1.1.3 = snAgentCpuUtilInterval
+      # Index: {unit}.{slot}.{cpu_num}.{interval}
       - oid: FOUNDRY-SN-AGENT-MIB::snAgentCpuUtilTable
         value: FOUNDRY-SN-AGENT-MIB::snAgentCpuUtilPercent
         num_oid: '.1.3.6.1.4.1.1991.1.1.2.11.1.1.5.{{ $index }}'
@@ -46,10 +34,7 @@ modules:
   sensors:
     temperature:
       data:
-        # Module Temperatures - Per-unit sensor table (snAgentTemp2Table)
-        # Uses actual sensor descriptions from MIB (CPU, MAC 1, MAC 2)
-        # Format: "Unit X: <description>" for clear identification
-        # Only for stacking systems (skip if standalone)
+        # Temperature - stacked (skip on standalone)
         - oid: FOUNDRY-SN-AGENT-MIB::snAgentTemp2Table
           value: FOUNDRY-SN-AGENT-MIB::snAgentTemp2Value
           divisor: 2
@@ -61,8 +46,7 @@ modules:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "="
               value: 5
-        # Fallback for standalone units (snAgentTempTable)
-        # Only for standalone systems (skip if stacking)
+        # Temperature - standalone (skip on stacked)
         - oid: FOUNDRY-SN-AGENT-MIB::snAgentTempTable
           value: FOUNDRY-SN-AGENT-MIB::snAgentTempValue
           divisor: 2
@@ -76,9 +60,7 @@ modules:
               value: 5
     state:
       data:
-        # Power Supply Status - Table 1 (standard/standalone)
-        # Returns: 1=other, 2=normal, 3=failure
-        # Only for standalone units (skip if stacking system)
+        # Power Supply - standalone (skip on stacked)
         - oid: FOUNDRY-SN-AGENT-MIB::snChasPwrSupplyTable
           value: FOUNDRY-SN-AGENT-MIB::snChasPwrSupplyOperStatus
           num_oid: '.1.3.6.1.4.1.1991.1.1.1.2.1.1.3.{{ $index }}'
@@ -94,10 +76,7 @@ modules:
             - {value: 1, descr: Other, graph: 0, generic: 3}
             - {value: 2, descr: Normal, graph: 0, generic: 0}
             - {value: 3, descr: Failed, graph: 0, generic: 2}
-        # Power Supply Status - Table 2 (stacked configurations)
-        # Index format: {unit}.{ps_number} (e.g., 1.1, 1.2, 2.1, 2.2)
-        # Returns: 1=other, 2=normal, 3=failure
-        # Only for stacking systems (skip if standalone)
+        # Power Supply - stacked (skip on standalone)
         - oid: FOUNDRY-SN-AGENT-MIB::snChasPwrSupply2Table
           value: FOUNDRY-SN-AGENT-MIB::snChasPwrSupply2OperStatus
           num_oid: '.1.3.6.1.4.1.1991.1.1.1.2.2.1.4.{{ $index }}'
@@ -113,8 +92,7 @@ modules:
             - {value: 1, descr: Other, graph: 0, generic: 3}
             - {value: 2, descr: Normal, graph: 0, generic: 0}
             - {value: 3, descr: Failed, graph: 0, generic: 2}
-        # Fan Status - Table 1 (standard/standalone)
-        # Returns: 1=other, 2=normal, 3=failure
+        # Fan - standalone (skip on stacked)
         - oid: FOUNDRY-SN-AGENT-MIB::snChasFanTable
           value: FOUNDRY-SN-AGENT-MIB::snChasFanOperStatus
           num_oid: '.1.3.6.1.4.1.1991.1.1.1.3.1.1.3.{{ $index }}'
@@ -130,9 +108,7 @@ modules:
             - {value: 1, descr: Other, graph: 0, generic: 3}
             - {value: 2, descr: Normal, graph: 0, generic: 0}
             - {value: 3, descr: Failed, graph: 0, generic: 2}
-        # Fan Status - Table 2 (stacked configurations)
-        # Index format: {unit}.{fan_index} (e.g., 1.1, 1.2, 2.1, 2.2)
-        # Returns: 1=other, 2=normal, 3=failure
+        # Fan - stacked (skip on standalone)
         - oid: FOUNDRY-SN-AGENT-MIB::snChasFan2Table
           value: FOUNDRY-SN-AGENT-MIB::snChasFan2OperStatus
           num_oid: '.1.3.6.1.4.1.1991.1.1.1.3.2.1.4.{{ $index }}'
@@ -149,9 +125,7 @@ modules:
             - {value: 2, descr: Normal, graph: 0, generic: 0}
             - {value: 3, descr: Failed, graph: 0, generic: 2}
 
-        # Board Module Status - Per-unit board operational status (stacked)
-        # Index format: {unit}.{slot} (e.g., 1.1, 2.1, 3.1)
-        # Returns: 0=empty, 2=goingDown, 3=rejected, 4=bad, 8=configured, 9=comingUp, 10=running
+        # Board Module Status - stacked (skip on standalone)
         - oid: FOUNDRY-SN-AGENT-MIB::snAgentBrd2Table
           value: FOUNDRY-SN-AGENT-MIB::snAgentBrd2ModuleStatus
           num_oid: '.1.3.6.1.4.1.1991.1.1.2.2.2.1.6.{{ $index }}'
@@ -171,11 +145,27 @@ modules:
             - {value: 8, descr: Configured, graph: 0, generic: 1}
             - {value: 9, descr: Starting, graph: 0, generic: 1}
             - {value: 10, descr: Running, graph: 0, generic: 0}
-        # Board Redundancy Status - Per-unit redundancy status (stacked)
-        # Index format: {unit}.{slot} (e.g., 1.1, 2.1, 3.1)
-        # Returns: 1=other, 2=active, 3=standby, 4=crashed, 5=comingUp
-        # Skip sensors with 'other' status (not meaningful for monitoring)
-        # Only for stacking systems (skip if standalone)
+        # Board Module Status - standalone (skip on stacked)
+        - oid: FOUNDRY-SN-AGENT-MIB::snAgentBrdTable
+          value: FOUNDRY-SN-AGENT-MIB::snAgentBrdModuleStatus
+          num_oid: '.1.3.6.1.4.1.1991.1.1.2.2.1.1.12.{{ $index }}'
+          descr: 'Module {{ $index }} Status'
+          index: '{{ $index }}'
+          group: 'Switch Module Status'
+          state_name: snAgentBrdModuleStatus
+          skip_values:
+            - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
+              op: "!="
+              value: 5
+          states:
+            - {value: 0, descr: Empty, graph: 0, generic: 3}
+            - {value: 2, descr: Stopping, graph: 0, generic: 1}
+            - {value: 3, descr: Rejected, graph: 0, generic: 2}
+            - {value: 4, descr: Failed, graph: 0, generic: 2}
+            - {value: 8, descr: Configured, graph: 0, generic: 1}
+            - {value: 9, descr: Starting, graph: 0, generic: 1}
+            - {value: 10, descr: Running, graph: 0, generic: 0}
+        # Board Redundancy - stacked (skip on standalone)
         - oid: FOUNDRY-SN-AGENT-MIB::snAgentBrd2Table
           value: FOUNDRY-SN-AGENT-MIB::snAgentBrd2RedundantStatus
           num_oid: '.1.3.6.1.4.1.1991.1.1.2.2.2.1.7.{{ $index }}'
@@ -187,9 +177,24 @@ modules:
             - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
               op: "="
               value: 5
-            - oid: "FOUNDRY-SN-AGENT-MIB::snAgentBrd2RedundantStatus"
-              op: "="
-              value: 1
+          states:
+            - {value: 1, descr: Other, graph: 0, generic: 3}
+            - {value: 2, descr: Active, graph: 0, generic: 0}
+            - {value: 3, descr: Standby, graph: 0, generic: 0}
+            - {value: 4, descr: Crashed, graph: 0, generic: 2}
+            - {value: 5, descr: Starting, graph: 0, generic: 1}
+        # Board Redundancy - standalone (skip on stacked)
+        - oid: FOUNDRY-SN-AGENT-MIB::snAgentBrdTable
+          value: FOUNDRY-SN-AGENT-MIB::snAgentBrdRedundantStatus
+          num_oid: '.1.3.6.1.4.1.1991.1.1.2.2.1.1.13.{{ $index }}'
+          descr: 'Module {{ $index }} Redundancy Status'
+          index: '{{ $index }}'
+          group: 'Switch Module Status'
+          state_name: snAgentBrdRedundantStatus
+          skip_values:
+            - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
+              op: "!="
+              value: 5
           states:
             - {value: 1, descr: Other, graph: 0, generic: 3}
             - {value: 2, descr: Active, graph: 0, generic: 0}
@@ -197,23 +202,7 @@ modules:
             - {value: 4, descr: Crashed, graph: 0, generic: 2}
             - {value: 5, descr: Starting, graph: 0, generic: 1}
 
-        # Stack Configuration State - DISABLED
-        # This OID does NOT exist on firmware 08.0.30u
-        # Commented out to prevent discovery errors
-        # - oid: FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalConfigState
-        #   value: FOUNDRY-SN-SWITCH-GROUP-MIB::snStackingGlobalConfigState
-        #   num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.1.1.0'
-        #   descr: 'Stack Configuration'
-        #   group: 'Stack Status'
-        #   state_name: snStackingGlobalConfigState
-        #   states:
-        #     - { value: 0, descr: disabled, graph: 0, generic: 3 }
-        #     - { value: 1, descr: enabled, graph: 1, generic: 0 }
-        #     - { value: 2, descr: unsupported, graph: 0, generic: 2 }
-
-        # Stack Unit State - Verified working on 6-unit stack
-        # Returns: 1=local (master), 2=remote (members)
-        # Only for stacking systems (skip if standalone)
+        # Stack Unit State - stacked only (skip on standalone)
         - oid: FOUNDRY-SN-STACKING-MIB::snStackingOperUnitTable
           value: FOUNDRY-SN-STACKING-MIB::snStackingOperUnitState
           num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.5.{{ $index }}'
@@ -230,19 +219,13 @@ modules:
             - {value: 3, descr: Reserved, graph: 0, generic: 1}
             - {value: 4, descr: Empty, graph: 0, generic: 2}
 
-        # Stack Unit Role - Verified working on 6-unit stack
-        # Returns: 2=active (master), 3=standby, 4=member, 5=standalone
-        # Only for stacking systems (skip if standalone)
+        # Stack Unit Role - both stacked and standalone (returns 5=Standalone)
         - oid: FOUNDRY-SN-STACKING-MIB::snStackingOperUnitTable
           value: FOUNDRY-SN-STACKING-MIB::snStackingOperUnitRole
           num_oid: '.1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.{{ $index }}'
           descr: 'Unit {{ $index }} Stack Role'
           group: 'Stack Topology'
           state_name: snStackingOperUnitRole
-          skip_values:
-            - oid: ".1.3.6.1.4.1.1991.1.1.3.31.2.2.1.2.1"
-              op: "="
-              value: 5
           states:
             - {value: 1, descr: "Other / Unknown", graph: 0, generic: 3}
             - {value: 2, descr: "Active Controller", graph: 0, generic: 0}
@@ -250,10 +233,5 @@ modules:
             - {value: 4, descr: "Stack Member", graph: 0, generic: 0}
             - {value: 5, descr: "Standalone", graph: 0, generic: 0}
 
-    # PoE Power Sensors
-    # Handled in PHP: includes/discovery/sensors/power/brocade-stack.inc.php
-    # Reason: YAML has index resolution issues with numerical OIDs when MIBs
-    # are loaded, and port linking requires complex ifIndex mapping.
-    #
-    # Per-Unit: Unit X PoE Capacity/Consumption (snAgentPoeUnitTable)
-    # Per-Port: Port X PoE Limit/Consumption (snAgentPoePortTable, linked to port pages)
+    # PoE sensors handled in PHP: includes/discovery/sensors/power/brocade-stack.inc.php
+    # (YAML can't resolve numerical OIDs when MIBs are loaded, and port linking needs ifIndex mapping)
