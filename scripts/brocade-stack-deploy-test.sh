@@ -40,10 +40,19 @@ PATHS=(
   "resources/views/device/tabs/ports/poe.blade.php"
 )
 
-# Old file paths to remove from previous deployments
+# Orphan files to remove (previously installed but no longer needed)
 ORPHAN_PATHS=(
+  "LibreNMS/OS/Shared/Brocade.php"
+  "app/Models/IronwareStackMember.php"
+  "app/Models/IronwareStackTopology.php"
+  "app/Models/BrocadeStackMember.php"
+  "app/Models/BrocadeStackTopology.php"
+  "database/migrations/2026_01_17_000002_rename_ironware_to_brocade_stack_tables.php"
+  "database/migrations/2026_01_17_000001_add_brocade_stack_tables.php"
+  "database/migrations/2025_01_17_120000_add_brocade_stack_tables.php"
   "includes/discovery/brocade-stack.inc.php"
   "includes/polling/brocade-stack.inc.php"
+  "resources/views/device/tabs/ports.blade.php"
 )
 
 # Testing-specific .gitignore marker (different from production)

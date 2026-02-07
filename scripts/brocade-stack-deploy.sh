@@ -55,6 +55,7 @@ ORPHAN_PATHS=(
   "database/migrations/2025_01_17_120000_add_brocade_stack_tables.php"
   "includes/discovery/brocade-stack.inc.php"
   "includes/polling/brocade-stack.inc.php"
+  "resources/views/device/tabs/ports.blade.php"
 )
 
 GITIGNORE_MARKER="# librenms-customizations overlay (ignore so upstream git pull does not overwrite)"
